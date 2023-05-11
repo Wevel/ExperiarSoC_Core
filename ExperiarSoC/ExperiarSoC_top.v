@@ -340,29 +340,15 @@ module ExperiarSoC (
 	wire[63:0] core0SRAM_dout1;
 
 	// Logic probes
-	wire[1:0] probe_core0_state;
+	wire probe_core0_state;
 	wire[1:0] probe_core0_env;
 	wire[31:0] probe_core0_programCounter;
-	wire[6:0] probe_core0_opcode;
-	wire[1:0] probe_core0_errorCode;
-	wire probe_core0_isBranch;
-	wire probe_core0_takeBranch;
-	wire probe_core0_isStore;
-	wire probe_core0_isLoad;
-	wire probe_core0_isCompressed;
 	wire[4:0] probe_core0_jtagInstruction;
 
-	wire[54:0] probe_core0 = {
+	wire[39:0] probe_core0 = {
 		probe_core0_state,
 		probe_core0_env,
 		probe_core0_programCounter,
-		probe_core0_opcode,
-		probe_core0_errorCode,
-		probe_core0_isBranch,
-		probe_core0_takeBranch,
-		probe_core0_isStore,
-		probe_core0_isLoad,
-		probe_core0_isCompressed,
 		probe_core0_jtagInstruction
 	};
 
@@ -416,13 +402,6 @@ module ExperiarSoC (
 		.probe_state(probe_core0_state),
 		.probe_env(probe_core0_env),
 		.probe_programCounter(probe_core0_programCounter),
-		.probe_opcode(probe_core0_opcode),
-		.probe_errorCode(probe_core0_errorCode),
-		.probe_isBranch(probe_core0_isBranch),
-		.probe_takeBranch(probe_core0_takeBranch),
-		.probe_isStore(probe_core0_isStore),
-		.probe_isLoad(probe_core0_isLoad),
-		.probe_isCompressed(probe_core0_isCompressed),
 		.probe_jtagInstruction(probe_core0_jtagInstruction));
 
 	wire[31:0] core0SRAM0_dout0;
@@ -490,29 +469,15 @@ module ExperiarSoC (
 	wire[63:0] core1SRAM_dout1;
 
 	// Logic probes
-	wire[1:0] probe_core1_state;
+	wire probe_core1_state;
 	wire[1:0] probe_core1_env;
 	wire[31:0] probe_core1_programCounter;
-	wire[6:0] probe_core1_opcode;
-	wire[1:0] probe_core1_errorCode;
-	wire probe_core1_isBranch;
-	wire probe_core1_takeBranch;
-	wire probe_core1_isStore;
-	wire probe_core1_isLoad;
-	wire probe_core1_isCompressed;
 	wire[4:0] probe_core1_jtagInstruction;
 
-	wire[54:0] probe_core1 = {
+	wire[39:0] probe_core1 = {
 		probe_core1_state,
 		probe_core1_env,
 		probe_core1_programCounter,
-		probe_core1_opcode,
-		probe_core1_errorCode,
-		probe_core1_isBranch,
-		probe_core1_takeBranch,
-		probe_core1_isStore,
-		probe_core1_isLoad,
-		probe_core1_isCompressed,
 		probe_core1_jtagInstruction
 	};
 
@@ -566,13 +531,6 @@ module ExperiarSoC (
 		.probe_state(probe_core1_state),
 		.probe_env(probe_core1_env),
 		.probe_programCounter(probe_core1_programCounter),
-		.probe_opcode(probe_core1_opcode),
-		.probe_errorCode(probe_core1_errorCode),
-		.probe_isBranch(probe_core1_isBranch),
-		.probe_takeBranch(probe_core1_takeBranch),
-		.probe_isStore(probe_core1_isStore),
-		.probe_isLoad(probe_core1_isLoad),
-		.probe_isCompressed(probe_core1_isCompressed),
 		.probe_jtagInstruction(probe_core1_jtagInstruction));
 
 	wire[31:0] core1SRAM0_dout0;
@@ -925,8 +883,9 @@ module ExperiarSoC (
 	assign jtag_tdo = core1_tdo;
 
 	assign la_data_out = {
-		probe_core1,				// 55
-		probe_core0,				// 55
+		30'b0,
+		probe_core1,				// 40
+		probe_core0,				// 40
 		probe_wishboneInterconnect,	// 16
 		probe_blink					// 2
 	};
