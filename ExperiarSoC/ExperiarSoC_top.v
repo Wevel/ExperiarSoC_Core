@@ -30,9 +30,8 @@ module ExperiarSoC (
 		input wire[3:0] caravel_irq,
 
 		// Logic Analyzer Signals
-		input wire[127:0] la_data_in,
-		output wire[127:0] la_data_out,
-		input wire[127:0] la_oenb,
+		//input wire[127:0] probe_in,
+		output wire[97:0] probe_out,
 
 		// Configuration constants
 		input wire[7:0] core0Index,
@@ -882,8 +881,7 @@ module ExperiarSoC (
 	assign core1_tdi = core0_tdo;
 	assign jtag_tdo = core1_tdo;
 
-	assign la_data_out = {
-		30'b0,
+	assign probe_out = {
 		probe_core1,				// 40
 		probe_core0,				// 40
 		probe_wishboneInterconnect,	// 16
