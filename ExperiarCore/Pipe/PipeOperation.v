@@ -71,7 +71,7 @@ module PipeOperation (
 	wire isCSR; wire isCSRIMM; wire isCSRRW; wire isCSRRS; wire isCSRRC; 
 	InstructionDecode decode(
 		.currentInstruction(currentInstruction),
-		.stall(pipeStall),
+		.isNOP(pipeStall),
 		.opcode(opcode),
 		.rdIndex(rdIndex), .rs1Index(rs1Index), .rs2Index(rs2Index),
 		.funct3(funct3), .funct7(funct7),

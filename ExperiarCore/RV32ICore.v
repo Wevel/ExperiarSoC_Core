@@ -90,7 +90,21 @@ module RV32ICore(
 	wire management_readRegister = management_readValid && management_selectRegister;
 	wire management_readCSR = management_readValid && management_selectCSR;
 
-	wire management_allowInstruction = management_run || management_writeProgramCounter_step;
+	wire pipeActive;
+	reg stepProgramCounter;
+
+	// Make sure to flush the pipe after a step
+	reg management_pipeStartup = 1'b0;
+	always @(posedge clk) begin
+		if (rst) begin
+			management_pipeStartup <= 1'b0;
+		end else begin
+			if ((management_run || management_writeProgramCounter_step) && !management_pipeStartup) management_pipeStartup <= 1'b1;
+			else if (stepProgramCounter) management_pipeStartup <= 1'b0;
+		end
+	end
+
+	wire management_allowInstruction = management_run || management_writeProgramCounter_step || management_pipeStartup;
 
 	wire[4:0] management_registerIndex = management_address[6:2];
 	wire[11:0] management_csrIndex = management_address[13:2];
@@ -130,7 +144,9 @@ module RV32ICore(
 	reg cancelStall;
 
 	wire loadStoreBusy = shouldStore || shouldLoad ? data_memoryBusy : 1'b0;
-	wire stepPipe = state == STATE_EXECUTE && !instruction_memoryBusy && !loadStoreBusy;
+	wire stepBlocked = (instruction_memoryEnable && instruction_memoryBusy) || loadStoreBusy;
+	wire stepPipe = state == STATE_EXECUTE && !stepBlocked;
+	wire progressPipe = pipeActive || management_allowInstruction;
 	wire stallPipe = !management_allowInstruction || pipe1_shouldStall || pipe2_shouldStall;
 	wire stallIncrementProgramCounter = !management_allowInstruction || pipe1_shouldStall;
 
@@ -285,6 +301,7 @@ module RV32ICore(
 		.isRET(pipe2_isRET));
 
 	assign pipe2_shouldStall = pipe2_isJump || pipe2_isFence || pipe2_isRET;
+	assign pipeActive = pipe0_active || pipe1_active || pipe2_active;
 
 	// Integer restister control
 	// Check if pipe1 needs the value being written by pipe2
@@ -314,7 +331,37 @@ module RV32ICore(
 	assign shouldStore = pipe1_memoryEnable && pipe1_memoryWriteEnable;
 	assign shouldLoad = (pipe1_memoryEnable && !pipe1_memoryWriteEnable) || pipe2_expectingLoad;
 
-	wire pipeActive = pipe0_active || pipe1_active || pipe2_active;
+	reg[31:0] nextFetchProgramCounter;
+
+	always @(*) begin
+		if (rst) begin
+			nextFetchProgramCounter = 32'b0;
+			stepProgramCounter = 1'b0;
+		end else begin
+			nextFetchProgramCounter = fetchProgramCounter;
+			stepProgramCounter = 1'b0;
+
+			case (state)
+				STATE_EXECUTE: begin
+					if (stepPipe) begin
+						if (inTrap) begin
+							nextFetchProgramCounter = trapVector;
+							stepProgramCounter = 1'b1;
+						end	else if (pipe1_isRET) begin
+							nextFetchProgramCounter = trapReturnVector;
+							stepProgramCounter = 1'b1;
+						end else if (pipe1_jumpEnable) begin
+							nextFetchProgramCounter = pipe1_nextProgramCounter;
+							stepProgramCounter = 1'b1;
+						end else if (!stallPipe) begin
+							nextFetchProgramCounter = fetchProgramCounter + 4;
+							stepProgramCounter = 1'b1;
+						end
+					end
+				end
+			endcase
+		end
+	end
 
 	always @(posedge clk) begin
 		if (rst) begin
@@ -324,18 +371,15 @@ module RV32ICore(
 		end else begin
 			case (state)
 				STATE_HALT: begin
-					if (management_allowInstruction) state <= STATE_EXECUTE;
+					if (progressPipe) begin
+						state <= STATE_EXECUTE;
+					end
 				end
 
 				STATE_EXECUTE: begin
 					if (stepPipe) begin
-						if (!pipeActive && !management_allowInstruction) state <= STATE_HALT;
-
-						if (inTrap) fetchProgramCounter <= trapVector;
-						else if (pipe1_isRET) fetchProgramCounter <= trapReturnVector;
-						else if (pipe1_jumpEnable) fetchProgramCounter <= pipe1_nextProgramCounter;
-						else if (!stallIncrementProgramCounter) fetchProgramCounter <= fetchProgramCounter + 4;
-
+						if (!progressPipe) state <= STATE_HALT;
+						if (stepProgramCounter) fetchProgramCounter <= nextFetchProgramCounter;
 						executeProgramCounter <= pipe0_programCounter;
 					end
 				end

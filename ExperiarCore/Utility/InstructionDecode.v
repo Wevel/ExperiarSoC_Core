@@ -1,6 +1,6 @@
 module InstructionDecode (
 		input wire[31:0] currentInstruction,
-		input wire stall,
+		input wire isNOP,
 		output reg[6:0] opcode,
 		output reg[4:0] rdIndex,
 		output reg[4:0] rs1Index,
@@ -37,7 +37,7 @@ module InstructionDecode (
 
 	// Instruction decode
 	always @(*) begin
-		if (stall) begin
+		if (isNOP) begin
 			opcode <= 7'b0;
 			rdIndex <= 5'b0;
 			rs1Index <= 5'b0;
@@ -58,7 +58,7 @@ module InstructionDecode (
 
 	// Instruction decode
 	always @(*) begin
-		if (stall) begin
+		if (isNOP) begin
 			isLUI 		   <= 1'b0;
 			isAUIPC 	   <= 1'b0;
 			isJAL 		   <= 1'b0;
@@ -94,7 +94,7 @@ module InstructionDecode (
 	
 	// System commands
 	always @(*) begin
-		if (stall) begin
+		if (isNOP) begin
 			isCSR 	 <= 1'b0;
 			isCSRIMM <= 1'b0;
 			isCSRRW  <= 1'b0;
@@ -118,7 +118,7 @@ module InstructionDecode (
 	wire validSystemCommand = isCSR || isECALL || isEBREAK || isRET;
 
 	always @(*) begin
-		if (stall) begin
+		if (isNOP) begin
 			invalidInstruction <= 1'b0;
 		end else begin
 			case ({ isLUI, isAUIPC, isJAL, isJALR, isBranch, isLoad, isStore, isALUImm, isALU, isFence, isSystem })

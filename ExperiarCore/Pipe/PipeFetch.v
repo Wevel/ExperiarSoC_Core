@@ -30,12 +30,12 @@ module PipeFetch #(
 		end else begin
 			if (stepPipe) begin
 				currentPipeStall <= pipeStall;
-				if (!currentPipeStall) lastInstruction <= currentInstruction;
+				if (!pipeStall) lastInstruction <= currentInstruction;
 			end
 		end
 	end
 
-	assign active = !currentPipeStall;
+	assign active = !currentPipeStall || stepPipe;
 
 	always @(posedge clk) begin
 		if (rst) lastProgramCounter <= 32'b0;
@@ -45,6 +45,6 @@ module PipeFetch #(
 	assign addressMisaligned = |programCounter[1:0];
 
 	assign fetchAddress = programCounter;
-	assign fetchEnable = stepPipe;
+	assign fetchEnable = !pipeStall;//stepPipe;
 
 endmodule

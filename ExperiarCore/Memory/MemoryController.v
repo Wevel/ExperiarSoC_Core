@@ -39,10 +39,10 @@ module MemoryController (
 	localparam LOCAL_MEMORY_ADDRESS = 4'b0000;
 	localparam WB_ADDRESS 		    = 4'b0001;
 
-	wire instruction_enableLocalMemory = coreInstructionAddress[31:24] == { LOCAL_MEMORY_ADDRESS, 4'b0000 };
-	wire data_enableLocalMemory 	   = coreDataAddress[31:24] == { LOCAL_MEMORY_ADDRESS, 4'b0000 };
-	wire instruction_enableWB 		   = coreInstructionAddress[31:28] == WB_ADDRESS;
-	wire data_enableWB 		  		   = coreDataAddress[31:28] == WB_ADDRESS;
+	wire instruction_enableLocalMemory = coreInstructionEnable && (coreInstructionAddress[31:24] == { LOCAL_MEMORY_ADDRESS, 4'b0000 });
+	wire data_enableLocalMemory 	   = coreDataEnable && (coreDataAddress[31:24] == { LOCAL_MEMORY_ADDRESS, 4'b0000 });
+	wire instruction_enableWB 		   = coreInstructionEnable && (coreInstructionAddress[31:28] == WB_ADDRESS);
+	wire data_enableWB 		  		   = coreDataEnable && (coreDataAddress[31:28] == WB_ADDRESS);
 
 	reg last_instruction_enableLocalMemory;
 	reg last_data_enableLocalMemory;
@@ -133,7 +133,7 @@ module MemoryController (
 
 			default: begin
 				coreInstructionDataRead <= ~32'b0;
-				coreInstructionBusy 	<= 1'b0;
+				coreInstructionBusy 	<= 1'b1;
 			end
 		endcase
 	end
@@ -152,7 +152,7 @@ module MemoryController (
 
 			default: begin
 				coreDataDataRead <= ~32'b0;
-				coreDataBusy 	 <= 1'b0;
+				coreDataBusy 	 <= 1'b1;
 			end
 		endcase
 	end
