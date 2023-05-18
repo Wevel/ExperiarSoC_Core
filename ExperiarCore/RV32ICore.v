@@ -108,7 +108,6 @@ module RV32ICore(
 
 	wire[4:0] management_registerIndex = management_address[6:2];
 	wire[11:0] management_csrIndex = management_address[13:2];
-	wire[31:0] management_jumpTarget = executeProgramCounter + management_writeData;
 
 	reg[31:0] management_dataOut;
 
@@ -116,11 +115,11 @@ module RV32ICore(
 
 	always @(*) begin
 		case (1'b1)
-			management_readProgramCounter: management_dataOut <= executeProgramCounter;
+			management_readProgramCounter: management_dataOut <= fetchProgramCounter;
 			management_readInstructionRegister : management_dataOut <= pipe1_currentInstruction;
 			management_readRegister: management_dataOut <= !management_registerIndex ? registers[management_registerIndex] : 32'b0;
 			management_readCSR: management_dataOut <= csrReadData;
-			default: management_dataOut <= 32'b0;
+			default: management_dataOut <= ~32'b0;
 		endcase
 	end
 
@@ -144,7 +143,7 @@ module RV32ICore(
 	reg cancelStall;
 
 	wire loadStoreBusy = shouldStore || shouldLoad ? data_memoryBusy : 1'b0;
-	wire stepBlocked = (instruction_memoryEnable && instruction_memoryBusy) || loadStoreBusy;
+	wire stepBlocked = (instruction_memoryEnable && instruction_memoryBusy) || loadStoreBusy;// || !management_allowInstruction
 	wire stepPipe = state == STATE_EXECUTE && !stepBlocked;
 	wire progressPipe = pipeActive || management_allowInstruction;
 	wire stallPipe = !management_allowInstruction || pipe1_shouldStall || pipe2_shouldStall;
@@ -373,6 +372,9 @@ module RV32ICore(
 				STATE_HALT: begin
 					if (progressPipe) begin
 						state <= STATE_EXECUTE;
+					end else begin
+						if (management_writeProgramCounter_set) fetchProgramCounter <= management_writeData;
+						else if (management_writeProgramCounter_jump) fetchProgramCounter <= executeProgramCounter + management_writeData;
 					end
 				end
 

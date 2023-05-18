@@ -1,4 +1,6 @@
-module Core_WBInterface (
+module Core_WBInterface #(
+		parameter ADDRESS_WIDTH = 28
+	)(
 		// Wishbone master interface
 		input wire wb_clk_i,
 		input wire wb_rst_i,
@@ -7,14 +9,14 @@ module Core_WBInterface (
 		output wire wb_we_o,
 		output wire[3:0] wb_sel_o,
 		output wire[31:0] wb_data_o,
-		output wire[27:0] wb_adr_o,
+		output wire[ADDRESS_WIDTH-1:0] wb_adr_o,
 		input wire wb_ack_i,
 		input wire wb_stall_i,
 		input wire wb_error_i,
 		input wire[31:0] wb_data_i,
 
 		// Memory interface from core
-		input wire[27:0] wbAddress,
+		input wire[ADDRESS_WIDTH-1:0] wbAddress,
 		input wire[3:0] wbByteSelect,
 		input wire wbEnable,
 		input wire wbWriteEnable,

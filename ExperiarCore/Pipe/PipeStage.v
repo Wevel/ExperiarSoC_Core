@@ -23,6 +23,6 @@ module PipeStage (
 		end
 	end
 
-	assign active = !currentPipeStall;
+	assign active = !pipeStall;
 	
 endmodule

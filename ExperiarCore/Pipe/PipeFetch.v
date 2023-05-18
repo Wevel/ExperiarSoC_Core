@@ -35,7 +35,7 @@ module PipeFetch #(
 		end
 	end
 
-	assign active = !currentPipeStall || stepPipe;
+	assign active = !pipeStall;
 
 	always @(posedge clk) begin
 		if (rst) lastProgramCounter <= 32'b0;
