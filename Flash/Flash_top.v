@@ -91,6 +91,8 @@ module Flash (
 	wire qspi_requestData;
 	wire[31:0] qspi_readData;
 	wire qspi_readDataValid;
+	wire qspi_initialised;
+	wire qspi_busy;
 
 	FlashBuffer #(.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE)) flashBuffer(
 		.clk(wb_clk_i),
@@ -108,6 +110,8 @@ module Flash (
 		.qspi_requestData(qspi_requestData),
 		.qspi_readData(qspi_readData),
 		.qspi_readDataValid(qspi_readDataValid),
+		.qspi_initialised(qspi_initialised),
+		.qspi_busy(qspi_busy),
 		.sram_clk0(sram_clk0),
 		.sram_csb0(sram_csb0),
 		.sram_web0(sram_web0),
@@ -130,6 +134,8 @@ module Flash (
 		.qspi_requestData(qspi_requestData),
 		.qspi_readData(qspi_readData),
 		.qspi_readDataValid(qspi_readDataValid),
+		.qspi_initialised(qspi_initialised),
+		.qspi_busy(qspi_busy),
 		.flash_csb(flash_csb),
 		.flash_sck(flash_sck),
 		.flash_io0_we(flash_io0_we),

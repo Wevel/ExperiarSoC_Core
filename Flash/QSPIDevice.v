@@ -9,6 +9,8 @@ module QSPIDevice (
 		input wire qspi_requestData,
 		output wire[31:0] qspi_readData,
 		output reg qspi_readDataValid,
+		output reg qspi_initialised,
+		output reg qspi_busy,
 
 		// QSPI interface
 		output wire flash_csb,
@@ -84,6 +86,8 @@ module QSPIDevice (
 			resetState <= RESET_START;
 			settingAddress <= 1'b0;
 			qspi_readDataValid <= 1'b0;
+			qspi_initialised <= 1'b0;
+			qspi_busy <= 1'b0;
 		end else begin
 			case (state)
 				STATE_IDLE: begin
@@ -94,6 +98,7 @@ module QSPIDevice (
 						if (resetDevice || qspi_changeAddress) begin
 							state <= STATE_SETUP;
 							settingAddress <= qspi_changeAddress;
+							qspi_busy <= 1'b1;
 						end
 					end
 				end
@@ -102,7 +107,8 @@ module QSPIDevice (
 					state <= STATE_SHIFT;
 					bitCounter <= 5'b0;
 					outputClock <= 1'b1;
-					qspi_readDataValid <= 1'b0;		
+					qspi_readDataValid <= 1'b0;
+					qspi_busy <= 1'b1;
 				end
 
 				STATE_SHIFT: begin
@@ -118,28 +124,42 @@ module QSPIDevice (
 						outputClock <= 1'b0;
 					end
 
-					if (qspi_changeAddress) state <= STATE_IDLE;
+					if (qspi_changeAddress) begin
+						state <= STATE_IDLE;
+						qspi_busy <= 1'b1;
+					end
 				end
 
 				STATE_END: begin
-					if (qspi_requestData) state <= STATE_SETUP;
-					else state <= STATE_IDLE;
+					if (qspi_requestData) begin
+						state <= STATE_SETUP;
+						qspi_busy <= 1'b1;
+					end else begin 
+						state <= STATE_IDLE;
+						qspi_busy <= 1'b0;
+					end
 
 					outputClock <= 1'b0;
 					settingAddress <= 1'b0;
 					qspi_readDataValid <= 1'b0;
 					
-					if (resetState == RESET_START) resetState <= RESET_WAKE;
-					else resetState <= RESET_NONE;
+					if (resetState == RESET_START) begin
+						resetState <= RESET_WAKE;
+					end else begin
+						resetState <= RESET_NONE;
+						qspi_initialised <= 1'b1;
+					end
 				end
 
 				default: begin
 					state <= STATE_IDLE;
-					bitCounter <= 5'b0;
 					outputClock <= 1'b0;
+					bitCounter <= 5'b0;
+					resetState <= RESET_START;
 					settingAddress <= 1'b0;
 					qspi_readDataValid <= 1'b0;
-					resetState <= RESET_START;
+					qspi_initialised <= 1'b0;
+					qspi_busy <= 1'b0;
 				end
 			endcase
 		end
