@@ -42,18 +42,21 @@ module FlashBuffer #(
 	reg[23:0] loadAddress;
 	reg[23:0] currentPageAddress;
 	reg pageAddressSet;
+	wire automaticPaging;
+	reg currentPagingMode;
 
 	reg[SRAM_ADDRESS_SIZE:0] cachedCount;
 	wire[SRAM_ADDRESS_SIZE:0] nextCachedCount = cachedCount + 1;
 	wire[SRAM_ADDRESS_SIZE:0] cachedCountFinal = { 1'b1, {(SRAM_ADDRESS_SIZE){1'b0}} };
 
-	// Select
-	wire sramEnable = peripheralBus_address[23:SRAM_ADDRESS_SIZE+2] == {(22-SRAM_ADDRESS_SIZE){1'b0}};
+	wire sramEnable = peripheralBus_oe && (peripheralBus_address[23] == 1'b0) && ((peripheralBus_address[22:SRAM_ADDRESS_SIZE+2] == {(21-SRAM_ADDRESS_SIZE){1'b0}}) || automaticPaging);
 	wire registersEnable = peripheralBus_address[23:12] == 12'h800;
 	wire[11:0] localAddress = peripheralBus_address[11:0];
+	wire[23:0] targetPageAddress = peripheralBus_address & {1'b0, {(21-SRAM_ADDRESS_SIZE){1'b1}}, {(SRAM_ADDRESS_SIZE){1'b0}}, 2'b00};
+	wire invalidPage = sramEnable && automaticPaging && (targetPageAddress != currentPageAddress);
 
 	wire loadingPage = qspi_enable && qspi_initialised && pageAddressSet && (cachedCount < cachedCountFinal);
-	wire wordReady = qspi_enable && qspi_initialised && pageAddressSet && ((peripheralBus_address[SRAM_ADDRESS_SIZE+1:0] < cachedCount) || !loadingPage);
+	wire wordReady = qspi_enable && qspi_initialised && pageAddressSet && ((peripheralBus_address[SRAM_ADDRESS_SIZE+1:2] < cachedCount) || !loadingPage) && !invalidPage;
 
 	// Register
 	// Configuration register 	Default 0x0
@@ -76,7 +79,15 @@ module FlashBuffer #(
 		.currentValue(configuration));
 
 	assign qspi_enable = configuration[0];
-	wire automaticPaging = configuration[1];
+	assign automaticPaging = configuration[1];
+
+	always @(posedge clk) begin
+		if (rst) begin
+			currentPagingMode <= 1'b0;
+		end else begin
+			currentPagingMode <= automaticPaging;
+		end
+	end
 
 	// Status register
 	// b00: QSPI initialised
@@ -132,15 +143,30 @@ module FlashBuffer #(
 		.readData_en(currentPageAddressRegisterReadDataEnable_nc),
 		.readData_busy(1'b0));
 
-	wire[23:0] currentPageAddressLoadAddress = { currentPageAddressRegisterWriteData[23 - SRAM_ADDRESS_SIZE - 2:0], {SRAM_ADDRESS_SIZE{1'b0}}, 2'b00};
+	reg[23:0] currentPageAddressLoadAddress;
+	
+	reg requireAddressChange;
+	always @(*) begin
+		if (automaticPaging) begin
+			currentPageAddressLoadAddress <= targetPageAddress;
+			requireAddressChange <= sramEnable && invalidPage;
+		end else begin
+			currentPageAddressLoadAddress <= { currentPageAddressRegisterWriteData[23 - SRAM_ADDRESS_SIZE - 2:0], {SRAM_ADDRESS_SIZE{1'b0}}, 2'b00};
+			requireAddressChange <= currentPageAddressRegisterWriteDataEnable;
+		end
+	end
+
+	assign qspi_changeAddress = requireAddressChange && !qspi_busy;
 
 	always @(posedge clk) begin
 		if (rst) begin
 			currentPageAddress <= 24'b0;
 			pageAddressSet <= 1'b0;
-		end else if (currentPageAddressRegisterWriteDataEnable && !qspi_busy && !automaticPaging) begin
+		end else if (qspi_changeAddress) begin
 			currentPageAddress <= currentPageAddressLoadAddress;
 			pageAddressSet <= 1'b1;
+		end else if (automaticPaging != currentPagingMode) begin
+			pageAddressSet <= 1'b0;
 		end
 	end
 
@@ -174,7 +200,7 @@ module FlashBuffer #(
 	reg flashCacheReadReady = 1'b0;
 	always @(posedge clk) begin
 		if (rst) flashCacheReadReady <= 1'b0;
-		else if (peripheralBus_oe && sramEnable && wordReady) flashCacheReadReady <= 1'b1;
+		else if (sramEnable && wordReady) flashCacheReadReady <= 1'b1;
 		else flashCacheReadReady <= 1'b0;
 	end
 
@@ -190,7 +216,7 @@ module FlashBuffer #(
 		endcase
 	end
 
-	assign peripheralBus_busy = sramEnable ? peripheralBus_oe && !flashCacheReadReady : currentPageAddressRegisterBusBusy;
+	assign peripheralBus_busy = sramEnable ? !flashCacheReadReady : currentPageAddressRegisterBusBusy;
 
 	// QSPI interface
 	always @(posedge clk) begin
@@ -198,19 +224,18 @@ module FlashBuffer #(
 			loadAddress <= 32'b0;
 			cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
 			qspi_requestData <= 1'b0;
-		end	else if (currentPageAddressRegisterWriteDataEnable && !qspi_busy) begin
+		end	else if (qspi_changeAddress) begin
 			loadAddress <= currentPageAddressLoadAddress;
 			cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
 			qspi_requestData <= 1'b1;
 		end else if (qspi_requestData && qspi_readDataValid) begin
 			loadAddress <= loadAddress + 4;
 			cachedCount <= nextCachedCount;
-			qspi_requestData <= nextCachedCount != cachedCountFinal;
+			qspi_requestData <= (nextCachedCount != cachedCountFinal) && pageAddressSet && !requireAddressChange;
 		end
 	end
 
 	assign qspi_address = currentPageAddressLoadAddress;
-	assign qspi_changeAddress = currentPageAddressRegisterWriteDataEnable && !qspi_busy;
 
 	// Assign sram port
 	// Read/write port
@@ -223,7 +248,7 @@ module FlashBuffer #(
 
 	// Read port
 	assign sram_clk1 = clk;
-	assign sram_csb1 = !(sramEnable && peripheralBus_oe && wordReady);
+	assign sram_csb1 = !(sramEnable && wordReady);
 	assign sram_addr1 = peripheralBus_address[SRAM_ADDRESS_SIZE+1:2];
 
 endmodule
