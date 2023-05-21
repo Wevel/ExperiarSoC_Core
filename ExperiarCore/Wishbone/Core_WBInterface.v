@@ -58,18 +58,24 @@ module Core_WBInterface #(
 
 				STATE_WRITE_SINGLE: begin
 					stb <= 1'b0;
-					
-					if (wb_ack_i) begin
-						state <= STATE_END;
+					if (wbEnable) begin
+						if (wb_ack_i) begin
+							state <= STATE_END;
+						end
+					end else begin
+						state <= STATE_IDLE;
 					end
 				end
 
 				STATE_READ_SINGLE: begin
 					stb <= 1'b0;
-
-					if (wb_ack_i) begin
-						state <= STATE_END;
-						readDataBuffered <= wb_data_i;
+					if (wbEnable) begin
+						if (wb_ack_i) begin
+							state <= STATE_END;
+							readDataBuffered <= wb_data_i;
+						end
+					end else begin
+						state <= STATE_IDLE;
 					end
 				end
 
@@ -85,8 +91,8 @@ module Core_WBInterface #(
 		end
 	end
 
-	assign wb_cyc_o = state != STATE_IDLE;
-	assign wb_stb_o = stb;
+	assign wb_cyc_o = state != STATE_IDLE && wbEnable;
+	assign wb_stb_o = stb && wbEnable;
 
 	assign wb_we_o = state == STATE_WRITE_SINGLE;
 	assign wb_sel_o = wbByteSelect;
@@ -94,6 +100,6 @@ module Core_WBInterface #(
 	assign wb_adr_o = wbAddress;
 	
 	assign wbDataRead = readDataBuffered;
-	assign wbBusy = (state != STATE_IDLE) && (state != STATE_END);
+	assign wbBusy = wb_cyc_o;
 
 endmodule
