@@ -121,20 +121,24 @@ module InstructionDecode (
 		if (isNOP) begin
 			invalidInstruction <= 1'b0;
 		end else begin
-			case ({ isLUI, isAUIPC, isJAL, isJALR, isBranch, isLoad, isStore, isALUImm, isALU, isFence, isSystem })
-				'b00000000001: invalidInstruction <= 1'b0;
-				'b00000000010: invalidInstruction <= 1'b0;
-				'b00000000100: invalidInstruction <= 1'b0;
-				'b00000001000: invalidInstruction <= 1'b0;
-				'b00000010000: invalidInstruction <= 1'b0;
-				'b00000100000: invalidInstruction <= 1'b0;
-				'b00001000000: invalidInstruction <= 1'b0;
-				'b00010000000: invalidInstruction <= 1'b0;
-				'b00100000000: invalidInstruction <= 1'b0;
-				'b01000000000: invalidInstruction <= 1'b0;
-				'b10000000000: invalidInstruction <= validSystemCommand;
-				default: invalidInstruction <= 1'b1;
-			endcase
+			if (isCompressed) begin
+				invalidInstruction <= 1'b1;
+			end else begin
+				case ({ isLUI, isAUIPC, isJAL, isJALR, isBranch, isLoad, isStore, isALUImm, isALU, isFence, isSystem })
+					'b00000000001: invalidInstruction <= 1'b0;
+					'b00000000010: invalidInstruction <= 1'b0;
+					'b00000000100: invalidInstruction <= 1'b0;
+					'b00000001000: invalidInstruction <= 1'b0;
+					'b00000010000: invalidInstruction <= 1'b0;
+					'b00000100000: invalidInstruction <= 1'b0;
+					'b00001000000: invalidInstruction <= 1'b0;
+					'b00010000000: invalidInstruction <= 1'b0;
+					'b00100000000: invalidInstruction <= 1'b0;
+					'b01000000000: invalidInstruction <= 1'b0;
+					'b10000000000: invalidInstruction <= validSystemCommand;
+					default: invalidInstruction <= 1'b1;
+				endcase
+			end
 		end
 	end
 
