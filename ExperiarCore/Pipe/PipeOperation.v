@@ -303,6 +303,7 @@ module PipeOperation (
 	assign operationResult = currentData;
 
 	// Load/Store control
+	// TODO: If we write and memory isn't busy, but we still don't step for some reason (waiting on instruction) then the value is written, but we will keep trying to write
 	assign memoryEnable = shouldLoadOrStore && !pipeStall;
 	assign memoryWriteEnable = shouldStore && !pipeStall;
 	assign memoryByteSelect = shouldLoadOrStore ? loadStoreByteMask[3:0] : 4'b0000;

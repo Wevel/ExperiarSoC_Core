@@ -61,6 +61,7 @@ module RV32ICore(
 	// System registers
 	reg state = STATE_HALT;
 	reg[31:0] fetchProgramCounter = 32'b0;
+	reg[31:0] nextFetchProgramCounter = 32'b0;
 	reg[31:0] executeProgramCounter = 32'b0;
 	reg[31:0] registers [0:31];
 
@@ -143,7 +144,7 @@ module RV32ICore(
 	reg cancelStall;
 
 	wire loadStoreBusy = shouldStore || shouldLoad ? data_memoryBusy : 1'b0;
-	wire stepBlocked = (instruction_memoryEnable && instruction_memoryBusy) || loadStoreBusy;// || !management_allowInstruction
+	wire stepBlocked = (instruction_memoryEnable && instruction_memoryBusy) || loadStoreBusy;
 	wire stepPipe = state == STATE_EXECUTE && !stepBlocked;
 	wire progressPipe = pipeActive || management_allowInstruction;
 	wire stallPipe = !management_allowInstruction || pipe1_shouldStall || pipe2_shouldStall;
@@ -166,7 +167,7 @@ module RV32ICore(
 		.active(pipe0_active),
 		.currentInstruction(instruction_memoryDataRead),
 		.lastInstruction(pipe0_currentInstruction),
-		.programCounter(fetchProgramCounter),
+		.programCounter(nextFetchProgramCounter),
 		.lastProgramCounter(pipe0_programCounter),
 		.addressMisaligned(pipe0_addressMisaligned),
 		.fetchAddress(pipe0_instructionFetchAddress),
@@ -330,8 +331,6 @@ module RV32ICore(
 	assign shouldStore = pipe1_memoryEnable && pipe1_memoryWriteEnable;
 	assign shouldLoad = (pipe1_memoryEnable && !pipe1_memoryWriteEnable) || pipe2_expectingLoad;
 
-	reg[31:0] nextFetchProgramCounter;
-
 	always @(*) begin
 		if (rst) begin
 			nextFetchProgramCounter = 32'b0;
@@ -382,7 +381,7 @@ module RV32ICore(
 					if (stepPipe) begin
 						if (!progressPipe) state <= STATE_HALT;
 						if (stepProgramCounter) fetchProgramCounter <= nextFetchProgramCounter;
-						executeProgramCounter <= pipe0_programCounter;
+						if (!pipe0_stall || !stallPipe) executeProgramCounter <= pipe0_programCounter;
 					end
 				end
 
