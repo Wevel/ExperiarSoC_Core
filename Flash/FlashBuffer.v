@@ -43,7 +43,6 @@ module FlashBuffer #(
 	reg[23:0] currentPageAddress;
 	reg pageAddressSet;
 	wire automaticPaging;
-	reg currentPagingMode;
 
 	reg[SRAM_ADDRESS_SIZE:0] cachedCount;
 	wire[SRAM_ADDRESS_SIZE:0] nextCachedCount = cachedCount + 1;
@@ -80,14 +79,6 @@ module FlashBuffer #(
 
 	assign qspi_enable = configuration[0];
 	assign automaticPaging = configuration[1];
-
-	always @(posedge clk) begin
-		if (rst) begin
-			currentPagingMode <= 1'b0;
-		end else begin
-			currentPagingMode <= automaticPaging;
-		end
-	end
 
 	// Status register
 	// b00: QSPI initialised
@@ -165,8 +156,6 @@ module FlashBuffer #(
 		end else if (qspi_changeAddress) begin
 			currentPageAddress <= currentPageAddressLoadAddress;
 			pageAddressSet <= 1'b1;
-		end else if (automaticPaging != currentPagingMode) begin
-			pageAddressSet <= 1'b0;
 		end
 	end
 
