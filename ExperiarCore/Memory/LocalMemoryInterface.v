@@ -22,15 +22,6 @@ module LocalMemoryInterface #(
 		output wire[31:0] wbDataRead,
 		output wire wbBusy,
 
-		// Flash interface
-		output wire[22:0] flashAddress,
-		output wire[3:0] flashByteSelect,
-		output wire flashEnable,
-		output wire flashWriteEnable,
-		output wire[31:0] flashDataWrite,
-		input wire[31:0] flashDataRead,
-		input wire flashBusy,
-
 		// SRAM rw port
 		output wire clk0, // Port clock
 		output wire[1:0] csb0, // active low chip select
@@ -102,7 +93,7 @@ module LocalMemoryInterface #(
 		end else if (wbSRAMReadEnable) begin
 			wbReadReady <= 1'b1;
 			lastRWBankSelect <= rwBankSelect;
-			lastWBByteSelect <= wbByteSelect;
+			lastWBByteSelect <= wbByteSelect;	
 		end else begin
 			wbReadReady <= 1'b0;
 			lastRWBankSelect <= 1'b0;
@@ -110,7 +101,7 @@ module LocalMemoryInterface #(
 		end
 	end
 
-	assign coreBusy = !coreReadReady;
+	assign coreBusy = coreSRAMReadEnable && !coreReadReady;
 	assign wbBusy = (wbSRAMEnable && coreSRAMWriteEnable) || (wbSRAMReadEnable && !wbReadReady);
 
 	// Read/Write port
