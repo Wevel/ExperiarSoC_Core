@@ -254,8 +254,11 @@ module RV32ICore(
 			cancelStall <= 1'b0;
 		end else begin
 			if (state == STATE_EXECUTE) begin
-				if (pipe1_operationResultStoreEnable) pipe1_resultRegister <= pipe1_operationResult;
-				if (pipe1_csrReadEnable) pipe1_csrData <= csrReadData;
+				if (stepPipe) begin
+					if (pipe1_operationResultStoreEnable) pipe1_resultRegister <= pipe1_operationResult;
+					if (pipe1_csrReadEnable) pipe1_csrData <= csrReadData;
+				end
+
 				cancelStall <= pipe1_failedBranch;
 			end
 		end
@@ -323,7 +326,9 @@ module RV32ICore(
 		if (rst) begin
 		end else begin
 			if (state == STATE_EXECUTE) begin
-				if (pipe2_registerWriteEnable && |pipe2_rdAddress) registers[pipe2_rdAddress] <= pipe2_registerWriteData;
+				if (stepPipe) begin
+					if (pipe2_registerWriteEnable && |pipe2_rdAddress) registers[pipe2_rdAddress] <= pipe2_registerWriteData;
+				end
 			end
 		end
 	end
