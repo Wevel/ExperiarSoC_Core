@@ -264,6 +264,27 @@ module RV32ICore(
 		end
 	end
 
+	// Cache the read value to prevent reading multiple times if the pipe is waiting
+	reg[31:0] cachedMemoryDataRead;
+	reg memoryOperationCompleted;
+	always @(posedge clk) begin
+		if (rst) begin 
+			cachedMemoryDataRead <= 32'b0;
+			memoryOperationCompleted <= 1'b0;
+		end	else if (pipe1_memoryEnable) begin 
+			if (!stepPipe) begin
+				if (shouldLoad && !data_memoryBusy) begin
+					cachedMemoryDataRead <= data_memoryDataRead;
+					memoryOperationCompleted <= 1;
+				end else if (shouldStore && !data_memoryBusy) begin
+					memoryOperationCompleted <= 1;
+				end
+			end
+		end else begin
+			memoryOperationCompleted <= 0;
+		end
+	end
+
 	// 3: Store data
 	wire pipe2_stall;
 	wire pipe2_active;
@@ -333,8 +354,8 @@ module RV32ICore(
 		end
 	end
 
-	assign shouldStore = pipe1_memoryEnable && pipe1_memoryWriteEnable;
-	assign shouldLoad = (pipe1_memoryEnable && !pipe1_memoryWriteEnable) || pipe2_expectingLoad;
+	assign shouldStore = !memoryOperationCompleted && pipe1_memoryEnable && pipe1_memoryWriteEnable;
+	assign shouldLoad = !memoryOperationCompleted && (pipe1_memoryEnable && !pipe1_memoryWriteEnable) || pipe2_expectingLoad;
 
 	always @(*) begin
 		if (rst) begin
