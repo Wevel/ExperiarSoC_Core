@@ -297,7 +297,6 @@ module RV32ICore(
 	wire[11:0] pipe2_csrWriteAddress;
 	wire[31:0] pipe2_csrWriteData;
 	wire pipe2_csrWriteEnable;
-	wire pipe2_isJump;
 	wire pipe2_isFence;
 	wire pipe2_isRET;
 	PipeStore pipe2_store (
@@ -320,11 +319,10 @@ module RV32ICore(
 		.csrWriteAddress(pipe2_csrWriteAddress),
 		.csrWriteData(pipe2_csrWriteData),
 		.csrWriteEnable(pipe2_csrWriteEnable),
-		.isJump(pipe2_isJump),
 		.isFence(pipe2_isFence),
 		.isRET(pipe2_isRET));
 
-	assign pipe2_shouldStall = pipe2_isJump || pipe2_isFence || pipe2_isRET;
+	assign pipe2_shouldStall = pipe2_isFence || pipe2_isRET;
 	assign pipeActive = pipe0_active || pipe1_active || pipe2_active;
 
 	// Integer restister control

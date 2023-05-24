@@ -30,7 +30,6 @@ module PipeStore (
 		output wire csrWriteEnable,
 
 		// Stall control
-		output wire isJump,
 		output wire isFence,
 		output wire isRET
 	);
@@ -183,8 +182,5 @@ module PipeStore (
 	assign csrWriteAddress = currentInstruction[31:20];
 	assign csrWriteData = aluResultData;
 	assign csrWriteEnable = csrWrite && !pipeStall;
-
-	// Stall control
-	assign isJump = isJAL || isJALR || isBranch;
 
 endmodule
