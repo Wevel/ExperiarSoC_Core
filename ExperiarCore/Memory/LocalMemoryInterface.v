@@ -90,7 +90,7 @@ module LocalMemoryInterface #(
 			wbReadReady <= 1'b0;
 			lastRWBankSelect <= 1'b0;
 			lastWBByteSelect <= 4'b0;
-		end else if (wbSRAMReadEnable) begin
+		end else if (wbSRAMReadEnable && !coreSRAMWriteEnable) begin
 			wbReadReady <= 1'b1;
 			lastRWBankSelect <= rwBankSelect;
 			lastWBByteSelect <= wbByteSelect;	
