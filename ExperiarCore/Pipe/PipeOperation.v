@@ -158,7 +158,7 @@ module PipeOperation (
 	wire[31:0] nextProgramCounterWord = nextProgramCounterBase + nextProgramCounterOffset;
 	wire[31:0] nextProgramCounterCompressed = programCounterLink; // TODO: Need to implement compressed branch and jump instructions
 	wire[31:0] nextProgramCounterFull = isCompressed ? nextProgramCounterCompressed : nextProgramCounterWord;
-	assign isJump = isJAL || isJALR || isBranch;
+	assign isJump = isJAL || isJALR || takeBranch;
 	assign jumpEnable = isJAL || isJALR || takeBranch;
 	assign failedBranch = isBranch && !takeBranch;
 	assign nextProgramCounter = { nextProgramCounterFull[31:1] , 1'b0};
