@@ -279,6 +279,8 @@ module RV32ICore(
 				end else if (shouldStore && !data_memoryBusy) begin
 					memoryOperationCompleted <= 1;
 				end
+			end else begin
+				memoryOperationCompleted <= 0;
 			end
 		end else begin
 			memoryOperationCompleted <= 0;
