@@ -19,6 +19,7 @@ module PipeStage (
 			if (stepPipe) begin
 				currentPipeStall <= pipeStall;
 				if (!pipeStall) lastInstruction <= currentInstruction;
+				else lastInstruction <= ~32'b0;
 			end
 		end
 	end
