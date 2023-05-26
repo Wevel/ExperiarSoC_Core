@@ -94,18 +94,24 @@ module RV32ICore(
 	wire pipeActive;
 	reg stepProgramCounter;
 
+	reg management_previousRun;
+	wire management_restart = (management_run && !management_previousRun) || management_writeProgramCounter_step;
+
 	// Make sure to flush the pipe after a step
-	reg management_pipeStartup = 1'b0;
+	reg management_pipeStartup;
 	always @(posedge clk) begin
 		if (rst) begin
+			management_previousRun <= 1'b0;
 			management_pipeStartup <= 1'b0;
 		end else begin
-			if ((management_run || management_writeProgramCounter_step) && !management_pipeStartup) management_pipeStartup <= 1'b1;
+			if (management_restart) management_pipeStartup <= 1'b1;
 			else if (stepProgramCounter) management_pipeStartup <= 1'b0;
+
+			management_previousRun <= management_run;
 		end
 	end
 
-	wire management_allowInstruction = management_run || management_writeProgramCounter_step || management_pipeStartup;
+	wire management_allowInstruction = (management_run && management_previousRun) || management_writeProgramCounter_step || management_pipeStartup;
 
 	wire[4:0] management_registerIndex = management_address[6:2];
 	wire[11:0] management_csrIndex = management_address[13:2];
@@ -161,20 +167,23 @@ module RV32ICore(
 	PipeFetch pipe0_fetch (
 		.clk(clk),
 		.rst(rst),
+		.pipeStartup(management_pipeStartup),
 		.stepPipe(stepPipe),
 		.pipeStall(stallPipe),
 		.currentPipeStall(pipe0_stall),
 		.active(pipe0_active),
 		.currentInstruction(instruction_memoryDataRead),
 		.lastInstruction(pipe0_currentInstruction),
-		.programCounter(nextFetchProgramCounter),
-		.lastProgramCounter(pipe0_programCounter),
+		.nextProgramCounter(nextFetchProgramCounter),
+		.fetchProgramCounter(fetchProgramCounter),
 		.addressMisaligned(pipe0_addressMisaligned),
 		.fetchAddress(pipe0_instructionFetchAddress),
-		.fetchEnable(pipe0_instructionFetchEnable));
+		.fetchEnable(pipe0_instructionFetchEnable),
+		.fetchBusy(instruction_memoryBusy));
 
 	// 1: Request data/Write data/ALU operation
 	reg[31:0] pipe1_resultRegister;
+	reg[31:0] pipe1_loadResult;
 	reg[31:0] pipe1_csrData;
 
 	wire pipe1_stall;
@@ -246,44 +255,42 @@ module RV32ICore(
 		.isRET(pipe1_isRET));
 
 	assign pipe1_shouldStall = pipe1_isJump || pipe1_isFence || pipe1_isRET;
-
+	
+	reg memoryOperationCompleted;
+	reg useCachedLoad;
 	always @(posedge clk) begin
 		if (rst) begin
 			pipe1_resultRegister <= 32'b0;
+			pipe1_loadResult <= 32'b0;
 			pipe1_csrData <= 32'b0;
 			cancelStall <= 1'b0;
+			memoryOperationCompleted <= 1'b0;
+			useCachedLoad <= 1'b0;
 		end else begin
 			if (state == STATE_EXECUTE) begin
 				if (stepPipe) begin
+					memoryOperationCompleted <= 0;
+					useCachedLoad <= memoryOperationCompleted && pipe1_memoryEnable;
+
 					if (pipe1_operationResultStoreEnable) pipe1_resultRegister <= pipe1_operationResult;
 					if (pipe1_csrReadEnable) pipe1_csrData <= csrReadData;
+				end else begin
+					if (pipe1_memoryEnable) begin 
+						if (data_memoryBusy) begin
+							useCachedLoad <= 1'b0;
+						end else begin
+							if (shouldLoad) begin
+								pipe1_loadResult <= data_memoryDataRead;
+								memoryOperationCompleted <= 1;
+							end else if (shouldStore) begin
+								memoryOperationCompleted <= 1;
+							end
+						end
+					end
 				end
 
 				cancelStall <= pipe1_failedBranch;
 			end
-		end
-	end
-
-	// Cache the read value to prevent reading multiple times if the pipe is waiting
-	reg[31:0] cachedMemoryDataRead;
-	reg memoryOperationCompleted;
-	always @(posedge clk) begin
-		if (rst) begin 
-			cachedMemoryDataRead <= 32'b0;
-			memoryOperationCompleted <= 1'b0;
-		end	else if (pipe1_memoryEnable) begin 
-			if (!stepPipe) begin
-				if (shouldLoad && !data_memoryBusy) begin
-					cachedMemoryDataRead <= data_memoryDataRead;
-					memoryOperationCompleted <= 1;
-				end else if (shouldStore && !data_memoryBusy) begin
-					memoryOperationCompleted <= 1;
-				end
-			end else begin
-				memoryOperationCompleted <= 0;
-			end
-		end else begin
-			memoryOperationCompleted <= 0;
 		end
 	end
 
@@ -312,7 +319,7 @@ module RV32ICore(
 		.lastInstruction(pipe2_currentInstruction),
 		.invalidInstruction(pipe2_invalidInstruction),
 		.expectingLoad(pipe2_expectingLoad),
-		.memoryDataRead(data_memoryDataRead),
+		.memoryDataRead(useCachedLoad ? pipe1_loadResult : data_memoryDataRead),
 		.aluResultData(pipe1_resultRegister),
 		.csrData(pipe1_csrData),
 		.registerWriteAddress(pipe2_rdAddress),
@@ -355,7 +362,7 @@ module RV32ICore(
 	end
 
 	assign shouldStore = !memoryOperationCompleted && pipe1_memoryEnable && pipe1_memoryWriteEnable;
-	assign shouldLoad = !memoryOperationCompleted && (pipe1_memoryEnable && !pipe1_memoryWriteEnable) || pipe2_expectingLoad;
+	assign shouldLoad = !memoryOperationCompleted && (pipe1_memoryEnable && !pipe1_memoryWriteEnable);// || (!useCachedLoad && pipe2_expectingLoad);
 
 	always @(*) begin
 		if (rst) begin
@@ -367,18 +374,24 @@ module RV32ICore(
 
 			case (state)
 				STATE_EXECUTE: begin
+					if (inTrap) begin
+						nextFetchProgramCounter = trapVector;
+					end	else if (pipe1_isRET) begin
+						nextFetchProgramCounter = trapReturnVector;
+					end else if (pipe1_jumpEnable) begin
+						nextFetchProgramCounter = pipe1_nextProgramCounter;
+					end else if (!stallPipe) begin
+						nextFetchProgramCounter = fetchProgramCounter + 4;
+					end
+
 					if (stepPipe) begin
 						if (inTrap) begin
-							nextFetchProgramCounter = trapVector;
 							stepProgramCounter = 1'b1;
 						end	else if (pipe1_isRET) begin
-							nextFetchProgramCounter = trapReturnVector;
 							stepProgramCounter = 1'b1;
 						end else if (pipe1_jumpEnable) begin
-							nextFetchProgramCounter = pipe1_nextProgramCounter;
 							stepProgramCounter = 1'b1;
 						end else if (!stallPipe) begin
-							nextFetchProgramCounter = fetchProgramCounter + 4;
 							stepProgramCounter = 1'b1;
 						end
 					end
@@ -407,7 +420,7 @@ module RV32ICore(
 					if (stepPipe) begin
 						if (!progressPipe) state <= STATE_HALT;
 						if (stepProgramCounter) fetchProgramCounter <= nextFetchProgramCounter;
-						if (!pipe0_stall || !stallPipe) executeProgramCounter <= pipe0_programCounter;
+						if (!stallPipe) executeProgramCounter <= fetchProgramCounter;
 					end
 				end
 
@@ -422,7 +435,7 @@ module RV32ICore(
 
 	assign data_memoryAddress = pipe1_memoryAddress;
 	assign data_memoryByteSelect = pipe1_memoryByteSelect;
-	assign data_memoryEnable = pipe1_memoryEnable;
+	assign data_memoryEnable = pipe1_memoryEnable && !memoryOperationCompleted;
 	assign data_memoryWriteEnable = pipe1_memoryWriteEnable;
 	assign data_memoryDataWrite = pipe1_memoryWriteData;
 

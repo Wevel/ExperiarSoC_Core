@@ -14,7 +14,7 @@ module PipeStage (
 	always @(posedge clk) begin
 		if (rst) begin
 			currentPipeStall <= 1'b1;
-			lastInstruction <= 32'b0;
+			lastInstruction <= ~32'b0;
 		end else begin
 			if (stepPipe) begin
 				currentPipeStall <= pipeStall;
