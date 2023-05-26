@@ -28,7 +28,6 @@ module Core_WBInterface #(
 	localparam STATE_IDLE  		  = 2'h0;
 	localparam STATE_WRITE_SINGLE = 2'h1;
 	localparam STATE_READ_SINGLE  = 2'h2;
-	localparam STATE_END 		  = 2'h3;
 	
 	reg[1:0] state = STATE_IDLE;
 	reg[31:0] readDataBuffered;
@@ -60,7 +59,7 @@ module Core_WBInterface #(
 					stb <= 1'b0;
 					if (wbEnable) begin
 						if (wb_ack_i) begin
-							state <= STATE_END;
+							state <= STATE_IDLE;
 						end
 					end else begin
 						state <= STATE_IDLE;
@@ -71,16 +70,12 @@ module Core_WBInterface #(
 					stb <= 1'b0;
 					if (wbEnable) begin
 						if (wb_ack_i) begin
-							state <= STATE_END;
+							state <= STATE_IDLE;
 							readDataBuffered <= wb_data_i;
 						end
 					end else begin
 						state <= STATE_IDLE;
 					end
-				end
-
-				STATE_END: begin
-					state <= STATE_IDLE;
 				end
 				
 				default: begin
