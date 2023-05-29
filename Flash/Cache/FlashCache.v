@@ -65,9 +65,11 @@ module FlashCache #(
 	
 	reg[PAGE_INDEX_ADDRESS_SIZE-1:0] selectedPageIndex;
 	reg pageSelected;
+	wire switchPageSelected;
 
 	reg[PAGE_INDEX_ADDRESS_SIZE-1:0] loadingPageIndex;
 	reg pageLoading;
+	wire switchPageLoading;
 
 	//----------------------------------------------------------------------------------------------------//
 	// Page index eviction control
@@ -106,8 +108,8 @@ module FlashCache #(
 				.automaticPagingChanged(automaticPagingChanged),
 				.manualPageAddressSet(manualPageAddressSet),
 				.manualPageAddress(manualPageAddress),
-				.pageSelected(pageSelected && (selectedPageIndex == generatePageIndex)),
-				.pageLoading(pageLoading && (loadingPageIndex == generatePageIndex)),
+				.pageSelected(pageSelected && !switchPageSelected && (selectedPageIndex == generatePageIndex)),
+				.pageLoading(pageLoading && !switchPageLoading && (loadingPageIndex == generatePageIndex)),
 				.readEnable(readEnable),
 				.readAddress(readAddress),
 				.pageValid(pageValid[generatePageIndex]),
@@ -138,6 +140,11 @@ module FlashCache #(
 		requestLoadingPageIndex = {PAGE_INDEX_ADDRESS_SIZE{1'b0}};
 		loadRequested = 1'b0;
 
+		if (readEnable) begin
+			activePageIndex = evictionPageIndex;
+			activePage = 1'b1;
+		end
+
 		for (generatePageValidIndex = PAGE_COUNT - 1; generatePageValidIndex >= 0; generatePageValidIndex = generatePageValidIndex - 1) begin
 			if (pageValid[generatePageValidIndex]) begin
 				activePageIndex = generatePageValidIndex;
@@ -163,13 +170,15 @@ module FlashCache #(
 		else readReady <= 1'b0;
 	end
 
+	assign switchPageSelected = (readEnable && activePage && (activePageIndex != selectedPageIndex)) || manualPageAddressSet || automaticPagingChanged;
+
 	always @(posedge clk) begin
 		if (rst) begin
 			pageSelected <= 1'b0;
 			selectedPageIndex <= {PAGE_INDEX_ADDRESS_SIZE{1'b0}};
 		end else begin
 			if (pageSelected) begin
-				if ((readEnable && activePage && (activePageIndex != selectedPageIndex)) || manualPageAddressSet || automaticPagingChanged) pageSelected <= 1'b0;
+				if (switchPageSelected) pageSelected <= 1'b0;
 			end else begin
 				if (pageHit && activePage) begin
 					pageSelected <= 1'b1;
@@ -184,13 +193,15 @@ module FlashCache #(
 		end
 	end
 
+	assign switchPageLoading = !pageRequestLoad[loadingPageIndex] || manualPageAddressSet;
+
 	always @(posedge clk) begin
 		if (rst) begin
 			pageLoading <= 1'b0;
 			loadingPageIndex <= {PAGE_INDEX_ADDRESS_SIZE{1'b0}};
 		end else begin
 			if (pageLoading) begin
-				if (!pageRequestLoad[loadingPageIndex] || manualPageAddressSet) pageLoading <= 1'b0;
+				if (switchPageLoading) pageLoading <= 1'b0;
 			end else begin
 				if (loadRequested) begin
 					pageLoading <= 1'b1;
