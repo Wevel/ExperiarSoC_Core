@@ -47,12 +47,8 @@ module Flash (
 	);
 
 	localparam SRAM_ADDRESS_SIZE = 9;
+	localparam PAGE_INDEX_ADDRESS_SIZE = 4;
 
-	localparam STATE_STARTUP 	   	 = 2'b00;
-	localparam STATE_WRITE_COMMAND 	 = 2'b01;
-	localparam STATE_CHANGE_ADDRESS  = 2'b11;
-	localparam STATE_READ_CONTINUOUS = 2'b11;
-	
 	// Wishbone interface
 	wire peripheralBus_we;
 	wire peripheralBus_oe;
@@ -96,7 +92,10 @@ module Flash (
 	wire qspi_initialised;
 	wire qspi_busy;
 
-	FlashBuffer #(.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE)) flashBuffer(
+	FlashBuffer #(
+		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE), 
+		.PAGE_INDEX_ADDRESS_SIZE(PAGE_INDEX_ADDRESS_SIZE)
+	) flashBuffer (
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
