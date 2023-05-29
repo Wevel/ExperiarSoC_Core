@@ -1,3 +1,5 @@
+`default_nettype none
+
 module PeripheralSelect #(
 		parameter ID = 8'h00
 	)(

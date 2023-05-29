@@ -1,3 +1,5 @@
+`default_nettype none
+
 module LocalMemoryInterface #(
 		parameter SRAM_ADDRESS_SIZE = 9
 	)(

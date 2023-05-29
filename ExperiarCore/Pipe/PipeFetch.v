@@ -1,3 +1,5 @@
+`default_nettype none
+
 module PipeFetch #(
 	 	parameter PROGRAM_COUNTER_RESET = 32'b0
 	)(

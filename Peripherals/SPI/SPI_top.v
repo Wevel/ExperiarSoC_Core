@@ -1,3 +1,5 @@
+`default_nettype none
+
 module SPI #(
 		parameter ID = 8'h01
 	)(

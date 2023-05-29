@@ -1,3 +1,5 @@
+`default_nettype none
+
 module WB_SRAMInterface (
 		input wire[3:0] coreID,
 

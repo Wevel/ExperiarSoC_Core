@@ -1,3 +1,5 @@
+`default_nettype none
+
 module MemoryController (
 		input wire clk,
 		input wire rst,

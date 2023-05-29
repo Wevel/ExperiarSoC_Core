@@ -1,3 +1,5 @@
+`default_nettype none
+
 module PipeStore (
 		input wire clk,
 		input wire rst,

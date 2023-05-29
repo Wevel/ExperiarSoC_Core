@@ -1,3 +1,5 @@
+`default_nettype none
+
 module FIFO
 	#(
 		parameter WORD_SIZE = 8,

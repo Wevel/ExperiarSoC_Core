@@ -1,3 +1,5 @@
+`default_nettype none
+
 module CSR_DataRegister #(
 		parameter ADDRESS = 12'h000
 	)(

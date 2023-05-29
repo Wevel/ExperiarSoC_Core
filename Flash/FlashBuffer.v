@@ -1,3 +1,5 @@
+`default_nettype none
+
 module FlashBuffer #(
 		parameter SRAM_ADDRESS_SIZE = 9
 	)(

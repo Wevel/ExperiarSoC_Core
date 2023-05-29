@@ -1,3 +1,5 @@
+`default_nettype none
+
 /*
    Parameters:
      STAGES = 4

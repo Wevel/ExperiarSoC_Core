@@ -1,3 +1,5 @@
+`default_nettype none
+
 module CSR_ConfigurationRegister #(
 		parameter ADDRESS = 12'h000,
 		parameter DEFAULT = 32'b0

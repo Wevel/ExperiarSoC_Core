@@ -34,6 +34,8 @@
    value.
 */
 
+`default_nettype none
+
 module AsyncFIFO 
 	#(
 		parameter SIZE = 4, 			// Size of the data

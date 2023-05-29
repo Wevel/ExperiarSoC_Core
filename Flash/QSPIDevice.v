@@ -1,3 +1,5 @@
+`default_nettype none
+
 module QSPIDevice (
 		input wire clk,
 		input wire rst,

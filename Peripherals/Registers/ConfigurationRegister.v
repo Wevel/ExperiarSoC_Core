@@ -1,3 +1,5 @@
+`default_nettype none
+
 module ConfigurationRegister #(
 		parameter WIDTH = 32,
 		parameter ADDRESS = 12'b0,

@@ -1,3 +1,5 @@
+`default_nettype none
+
 module CSR_TimerRegister #(
 		parameter ADDRESS_LOWER = 12'h000,
 		parameter ADDRESS_UPPER = 12'h000

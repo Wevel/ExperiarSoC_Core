@@ -1,3 +1,5 @@
+`default_nettype none
+
 module CSR (
 		input wire clk,
 		input wire rst,

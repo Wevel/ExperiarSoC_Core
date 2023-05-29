@@ -1,3 +1,5 @@
+`default_nettype none
+
 module DataRegister #(
 		parameter WIDTH = 32,
 		parameter ADDRESS = 12'b0

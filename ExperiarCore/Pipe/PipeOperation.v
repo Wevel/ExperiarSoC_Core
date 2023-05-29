@@ -1,3 +1,5 @@
+`default_nettype none
+
 module PipeOperation (
 		input wire clk,
 		input wire rst,

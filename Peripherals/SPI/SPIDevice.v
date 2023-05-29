@@ -1,3 +1,5 @@
+`default_nettype none
+
 module SPIDevice #(
 		parameter ID = 4'h0,
 		parameter CLOCK_WIDTH = 8

@@ -1,3 +1,5 @@
+`default_nettype none
+
 module PWMDevice #(
 		parameter ID = 4'h0,
 		parameter OUTPUTS = 4,
@@ -192,7 +194,7 @@ module PWMDevice #(
 			topCompareRegisterOutputRequest: peripheralBus_dataRead <= topCompareRegisterOutputData;
 			dataRegisterOutputRequest: peripheralBus_dataRead <= dataRegisterOutputData;
 			compareValuesOutputRequest: peripheralBus_dataRead <= compareValuesOutputData;
-			default: peripheralBus_dataRead <= 32'b0;
+			default: peripheralBus_dataRead <= ~32'b0;
 		endcase
 	end
 

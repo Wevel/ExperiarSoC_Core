@@ -1,3 +1,5 @@
+`default_nettype none
+
 module WishboneMultiMasterSlave (
 		input wire wb_clk_i,
 		input wire wb_rst_i,

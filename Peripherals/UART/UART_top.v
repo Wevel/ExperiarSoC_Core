@@ -1,3 +1,5 @@
+`default_nettype none
+
 module UART #(
 		parameter ID = 8'h00
 	)(

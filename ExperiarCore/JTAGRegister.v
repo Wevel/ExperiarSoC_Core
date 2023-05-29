@@ -1,3 +1,5 @@
+`default_nettype none
+
 module JTAGRegister #(
 		parameter WIDTH = 8
 	)(

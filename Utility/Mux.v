@@ -1,3 +1,5 @@
+`default_nettype none
+
 module Mux #(
 		parameter WIDTH = 1,
 		parameter INPUTS = 2,

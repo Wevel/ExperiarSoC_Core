@@ -1,3 +1,5 @@
+`default_nettype none
+
 module Traps (
 		input wire clk,
 		input wire rst,

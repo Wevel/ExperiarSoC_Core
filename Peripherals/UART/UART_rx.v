@@ -1,3 +1,5 @@
+`default_nettype none
+
 module UART_rx
 	#(
 		parameter CLOCK_SCALE_BITS = 16

@@ -1,3 +1,5 @@
+`default_nettype none
+
 module Counter #(
 		parameter WIDTH = 8, 	// Width of the output
 		parameter DIV = 0, 		// number of bits to use as divisor

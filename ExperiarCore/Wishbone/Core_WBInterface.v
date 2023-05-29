@@ -1,3 +1,5 @@
+`default_nettype none
+
 module Core_WBInterface #(
 		parameter ADDRESS_WIDTH = 28
 	)(

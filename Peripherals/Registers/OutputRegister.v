@@ -1,3 +1,5 @@
+`default_nettype none
+
 module OutputRegister #(
 		parameter WIDTH = 32,
 		parameter ADDRESS = 8'b0,

@@ -1,3 +1,5 @@
+`default_nettype none
+
 module UARTDevice  #(
 		parameter ID = 4'h0
 	)(

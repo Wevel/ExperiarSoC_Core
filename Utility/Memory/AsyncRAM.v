@@ -45,6 +45,8 @@
    value read in this case is undefined.
 */
 
+`default_nettype none
+
 module AsyncRAM 
 	#(
 		parameter SIZE = 8,						// size of each entry

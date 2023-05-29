@@ -1,3 +1,5 @@
+`default_nettype none
+
 module GPIO #(
 		parameter ID = 8'h03
 	)(

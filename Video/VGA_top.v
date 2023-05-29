@@ -1,3 +1,5 @@
+`default_nettype none
+
 module VGA #(
 		parameter ADDRESS_BITS = 13
 	)(

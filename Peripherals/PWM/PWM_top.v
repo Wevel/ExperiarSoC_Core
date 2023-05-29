@@ -1,3 +1,5 @@
+`default_nettype none
+
 module PWM #(
 		parameter ID = 8'h02
 	)(

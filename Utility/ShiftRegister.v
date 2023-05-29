@@ -1,3 +1,5 @@
+`default_nettype none
+
 module ShiftRegister #(
 		parameter WIDTH = 8
 	)(

@@ -1,3 +1,5 @@
+`default_nettype none
+
 module GPIODevice #(
 		parameter ID = 4'h0,
 		parameter IO_COUNT = 16
