@@ -124,8 +124,8 @@ module FlashPage #(
 		end
 	end
 
-	assign sramReadAddress = readAddress[SRAM_ADDRESS_SIZE+1:2];
-	assign sramWriteAddress = loadAddress[SRAM_ADDRESS_SIZE+1:2];
+	assign sramReadAddress = { pageIndex, readAddress[PAGE_DATA_ADDRESS_SIZE+1:2] };
+	assign sramWriteAddress = { pageIndex, loadAddress[PAGE_DATA_ADDRESS_SIZE+1:2] };
 
 	assign requestLoad = qspi_requestData || pendingAddressChange;
 
