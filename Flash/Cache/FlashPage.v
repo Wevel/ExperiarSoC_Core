@@ -113,7 +113,10 @@ module FlashPage #(
 			cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
 			qspi_requestData <= 1'b0;
 		end	else if (qspi_changeAddress) begin
-			$display("Changing base address of flash page 0x%h to 0x%h", pageIndex, qspi_address);
+			`ifdef DEBUG_FLASH
+				$display("Changing base address of flash page 0x%h to 0x%h", pageIndex, qspi_address);
+			`endif
+
 			loadAddress <= qspi_address;
 			cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
 			qspi_requestData <= 1'b1;
