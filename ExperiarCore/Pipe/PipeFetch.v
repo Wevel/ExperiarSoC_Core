@@ -60,6 +60,6 @@ module PipeFetch #(
 	assign addressMisaligned = |fetchProgramCounter[1:0];
 
 	assign fetchAddress = nextProgramCounter;
-	assign fetchEnable = (pipeStartup || !instructionCached) && !pipeStall;
+	assign fetchEnable = (pipeStartup || !instructionCached);
 
 endmodule
