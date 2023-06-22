@@ -84,6 +84,33 @@ module Traps (
 		end		
 	end
 
+`ifdef SIM
+	always @(posedge clk ) begin
+		if (isInterrupt) begin
+			case (1'b1)
+				isMachineSoftwareInterrupt: $display("%c[1;92mEntered Trap: MachineSoftwareInterrupt%c[0m", 27, 27);
+				isMachineTimerInterrupt: $display("%c[1;92mEntered Trap: MachineTimerInterrupt%c[0m", 27, 27);
+				|userInterrupts: $display("%c[1;92mEntered Trap: userInterrupts%c[0m", 27, 27);
+				isMachineExternalInterrupt: $display("%c[1;92mEntered Trap: MachineExternalInterrupt%c[0m", 27, 27);
+			endcase
+		end else begin
+			case (1'b1)
+				isFetchAddressBreakpoint: $display("%c[1;35mEntered Trap: FetchAddressBreakpoint%c[0m", 27, 27);
+				isFetchAccessFault: $display("%c[1;31mEntered Trap: FetchAccessFault%c[0m", 27, 27);
+				isInvalidInstruction: $display("%c[1;31mEntered Trap: InvalidInstruction%c[0m", 27, 27);
+				misalignedInstructionFetch: $display("%c[1;31mEntered Trap: misalignedInstructionFetch%c[0m", 27, 27);
+				isECALL: $display("%c[1;92mEntered Trap: ECALL%c[0m", 27, 27);
+				isEBREAK: $display("%c[1;92mEntered Trap: EBREAK%c[0m", 27, 27);
+				isDataAddressBreakpoint: $display("%c[1;35mEntered Trap: DataAddressBreakpoint%c[0m", 27, 27);
+				isDataAddressMisaligned_store: $display("%c[1;31mEntered Trap: DataAddressMisaligned_store%c[0m", 27, 27);
+				isDataAddressMisaligned_load: $display("%c[1;31mEntered Trap: DataAddressMisaligned_load%c[0m", 27, 27);
+				isDataAccessFault_store: $display("%c[1;31mEntered Trap: DataAccessFault_store%c[0m", 27, 27);
+				isDataAccessFault_load: $display("%c[1;31mEntered Trap: DataAccessFault_load%c[0m", 27, 27);
+			endcase
+		end		
+	end
+`endif
+
 	// Misaligned instruction fetch sets trap cause to zero, so needs to be triggered specifically
 	wire isException = |trapCause || misalignedInstructionFetch;
 	wire isInterrupt = |pendingInterrupts;
