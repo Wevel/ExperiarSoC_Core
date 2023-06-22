@@ -55,11 +55,17 @@ module PipeFetch #(
 		end
 	end
 
+	reg cancelFetch = 1'b0;
+	always @(negedge clk) begin
+		if (rst) cancelFetch <= 1'b0;
+		else if (stepPipe) cancelFetch <= pipeStall;
+	end
+
 	assign active = !pipeStall;
 
 	assign addressMisaligned = |fetchProgramCounter[1:0];
 
 	assign fetchAddress = nextProgramCounter;
-	assign fetchEnable = (pipeStartup || !instructionCached);
+	assign fetchEnable = (pipeStartup || !instructionCached) && !cancelFetch;
 
 endmodule
