@@ -178,13 +178,17 @@ module RV32ICore(
 	wire shouldStore;
 	wire shouldLoad;
 
+	reg memoryOperationCompleted;
 	reg cancelStall;
 
-	wire loadStoreBusy = shouldStore || shouldLoad ? data_memoryBusy : 1'b0;
-	wire stepBlocked = (instruction_memoryEnable && instruction_memoryBusy) || loadStoreBusy;
+	wire fetchBusy = instruction_memoryEnable && instruction_memoryBusy;
+	wire loadStoreBusy = shouldStore || shouldLoad ? !memoryOperationCompleted : 1'b0;
+	wire stepBlocked = fetchBusy || loadStoreBusy;
 	wire progressPipe = pipeActive || management_allowInstruction;
 	wire stallPipe = !management_allowInstruction || pipe1_shouldStall || pipe2_shouldStall;
 	wire stallIncrementProgramCounter = !management_allowInstruction || pipe1_shouldStall;
+
+	assign stepPipe = (state == STATE_EXECUTE) && !stepBlocked;
 
 	// 0: Request instruction
 	wire pipe0_stall;
@@ -285,14 +289,27 @@ module RV32ICore(
 
 	assign pipe1_shouldStall = pipe1_isJump || pipe1_isFence || pipe1_isRET; // 
 	
-	reg memoryOperationCompleted;
-	reg useCachedLoad;
 	always @(posedge clk) begin
 		if (rst) begin
 			pipe1_resultRegister <= 32'b0;
 			pipe1_loadResult <= 32'b0;
 			pipe1_csrData <= 32'b0;
 			cancelStall <= 1'b0;
+		end else begin
+			if (stateExecute) begin
+				if (stepPipe) begin
+					if (pipe1_operationResultStoreEnable) pipe1_resultRegister <= pipe1_operationResult;
+					if (pipe1_csrReadEnable) pipe1_csrData <= csrReadData;
+				end
+
+				cancelStall <= pipe1_failedBranch;
+			end
+		end
+	end
+
+	reg useCachedLoad;
+	always @(posedge clk) begin
+		if (rst) begin
 			memoryOperationCompleted <= 1'b0;
 			useCachedLoad <= 1'b0;
 		end else begin
@@ -300,12 +317,9 @@ module RV32ICore(
 				if (stepPipe) begin
 					memoryOperationCompleted <= 0;
 					useCachedLoad <= memoryOperationCompleted && pipe1_memoryEnable;
-
-					if (pipe1_operationResultStoreEnable) pipe1_resultRegister <= pipe1_operationResult;
-					if (pipe1_csrReadEnable) pipe1_csrData <= csrReadData;
 				end else begin
 					if (pipe1_memoryEnable) begin 
-						if (data_memoryBusy) begin
+						if (data_memoryBusy || instruction_memoryEnable) begin
 							useCachedLoad <= 1'b0;
 						end else begin
 							if (shouldLoad) begin
@@ -317,8 +331,6 @@ module RV32ICore(
 						end
 					end
 				end
-
-				cancelStall <= pipe1_failedBranch;
 			end
 		end
 	end
@@ -401,7 +413,7 @@ module RV32ICore(
 		.management_writeData(management_writeData),
 		.state(state),
 		.progressPipe(progressPipe),
-		.stepBlocked(stepBlocked),
+		.stepPipe(stepPipe),
 		.stallPipe(stallPipe),
 		.inTrap(inTrap),
 		.trapVector(trapVector),
@@ -412,7 +424,6 @@ module RV32ICore(
 		.fetchProgramCounter(fetchProgramCounter),
 		.nextFetchProgramCounter(nextFetchProgramCounter),
 		.executeProgramCounter(executeProgramCounter),
-		.stepPipe(stepPipe),
 		.stepProgramCounter(stepProgramCounter));
 
 	// Memory control

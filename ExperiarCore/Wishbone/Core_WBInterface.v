@@ -24,7 +24,7 @@ module Core_WBInterface #(
 		input wire wbWriteEnable,
 		input wire[31:0] wbDataWrite,
 		output wire[31:0] wbDataRead,
-		output wire wbBusy
+		output reg wbBusy
 	);
 
 	localparam STATE_IDLE  		  = 2'h0;
@@ -44,10 +44,12 @@ module Core_WBInterface #(
 			wb_sel_o <= 4'b0;
 			wb_adr_o <= 0;
 			wb_data_o <= ~32'b0;
+			wbBusy <= 1'b0;
 		end else begin
 			case (state)
 				STATE_IDLE: begin
 					readDataBuffered <= ~32'b0;
+					wbBusy <= 1'b1;
 
 					if (wbEnable) begin
 						if (wbWriteEnable) begin
@@ -70,6 +72,7 @@ module Core_WBInterface #(
 					if (wbEnable) begin
 						if (wb_ack_i) begin
 							state <= STATE_IDLE;
+							wbBusy <= 1'b0;
 						end
 					end else begin
 						state <= STATE_IDLE;
@@ -82,6 +85,7 @@ module Core_WBInterface #(
 						if (wb_ack_i) begin
 							state <= STATE_IDLE;
 							readDataBuffered <= wb_data_i;
+							wbBusy <= 1'b0;
 						end
 					end else begin
 						state <= STATE_IDLE;
@@ -91,6 +95,7 @@ module Core_WBInterface #(
 				default: begin
 					state <= STATE_IDLE;
 					stb <= 1'b0;
+					wbBusy <= 1'b1;
 				end
 			endcase
 		end
@@ -102,6 +107,6 @@ module Core_WBInterface #(
 	assign wb_we_o = state == STATE_WRITE_SINGLE;
 		
 	assign wbDataRead = readDataBuffered;
-	assign wbBusy = wb_cyc_o;
+	//assign wbBusy = wb_cyc_o;
 
 endmodule

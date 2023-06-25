@@ -12,7 +12,7 @@ module ProgramCounter(
 		// Pipe control
 		input wire state,
 		input wire progressPipe,
-		input wire stepBlocked,
+		input wire stepPipe,
 		input wire stallPipe,
 
 		// Program counter jump
@@ -29,18 +29,15 @@ module ProgramCounter(
 		output reg[31:0] executeProgramCounter,
 
 		// Pipe state
-		output wire stepPipe,
 		output reg stepProgramCounter
 	);
 
 	localparam STATE_HALT 	 	= 1'b0;
 	localparam STATE_EXECUTE 	= 1'b1;
 
-	assign stepPipe = (state == STATE_EXECUTE) && !stepBlocked;
-
 	// Update the next program counter half a clock cycle before the program counter is updated
 	// This makes sure the address is updated prior to the instruction being fetched
-	always @(negedge clk) begin
+	always @(*) begin
 		if (rst) begin
 			nextFetchProgramCounter = 32'b0;
 			stepProgramCounter = 1'b0;

@@ -44,18 +44,17 @@ module PipeFetch #(
 		end
 	end
 
+	// Fetch control
 	always @(negedge clk) begin
 		if (rst) begin
-			cachedInstruction <= 32'b0;
 			instructionCached <= 1'b0;
+			cachedInstruction <= 32'b0;
 		end else begin
 			if (stepPipe) begin
 				instructionCached <= 1'b0;
-				cachedInstruction <= 32'b0;
 			end else begin
 				if (updateProgramCounterChanged || pipeStartup) begin
 					instructionCached <= 1'b0;
-					cachedInstruction <= 32'b0;
 				end else if (!fetchBusy && fetchEnable) begin
 					instructionCached <= 1'b1;
 					cachedInstruction <= currentInstruction;
