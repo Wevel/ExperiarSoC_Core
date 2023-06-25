@@ -16,7 +16,6 @@ module PipeFetch #(
 		output reg[31:0] lastInstruction,
 
 		// Control
-		input wire[31:0] nextProgramCounter,
 		input wire[31:0] fetchProgramCounter,
 		output wire addressMisaligned,		
 
@@ -36,18 +35,28 @@ module PipeFetch #(
 		if (rst) begin
 			currentPipeStall <= 1'b1;
 			lastInstruction <= ~32'b0;
-			cachedInstruction <= 32'b0;
-			instructionCached <= 1'b0;
 		end else begin
 			if (stepPipe) begin
 				currentPipeStall <= pipeStall;
 				if (!pipeStall) lastInstruction <= instructionCached ? cachedInstruction : currentInstruction;
 				else lastInstruction <= ~32'b0;
+			end
+		end
+	end
+
+	always @(negedge clk) begin
+		if (rst) begin
+			cachedInstruction <= 32'b0;
+			instructionCached <= 1'b0;
+		end else begin
+			if (stepPipe) begin
 				instructionCached <= 1'b0;
+				cachedInstruction <= 32'b0;
 			end else begin
 				if (updateProgramCounterChanged || pipeStartup) begin
 					instructionCached <= 1'b0;
-				end else if (!fetchBusy) begin
+					cachedInstruction <= 32'b0;
+				end else if (!fetchBusy && fetchEnable) begin
 					instructionCached <= 1'b1;
 					cachedInstruction <= currentInstruction;
 				end
@@ -65,7 +74,7 @@ module PipeFetch #(
 
 	assign addressMisaligned = |fetchProgramCounter[1:0];
 
-	assign fetchAddress = nextProgramCounter;
+	assign fetchAddress = fetchProgramCounter;
 	assign fetchEnable = (pipeStartup || !instructionCached) && !cancelFetch;
 
 endmodule
