@@ -25,8 +25,6 @@ module PipeFetch #(
 		input wire fetchBusy
 	);
 
-	wire updateProgramCounterChanged = stepPipe && !pipeStall;
-
 	reg[31:0] cachedInstruction;
 	reg instructionCached;
 
@@ -45,28 +43,29 @@ module PipeFetch #(
 	end
 
 	// Fetch control
+	reg delayedStepPipe;
 	always @(negedge clk) begin
 		if (rst) begin
 			instructionCached <= 1'b0;
 			cachedInstruction <= 32'b0;
 		end else begin
-			if (stepPipe) begin
+			if (delayedStepPipe) begin
 				instructionCached <= 1'b0;
 			end else begin
-				if (updateProgramCounterChanged || pipeStartup) begin
-					instructionCached <= 1'b0;
-				end else if (!fetchBusy && fetchEnable) begin
+				if (!fetchBusy && fetchEnable) begin
 					instructionCached <= 1'b1;
 					cachedInstruction <= currentInstruction;
 				end
 			end
+			
+			delayedStepPipe <= stepPipe;
 		end
 	end
 
 	reg cancelFetch = 1'b0;
 	always @(negedge clk) begin
 		if (rst) cancelFetch <= 1'b0;
-		else if (stepPipe) cancelFetch <= pipeStall;
+		// else if (stepPipe) cancelFetch <= pipeStall;
 	end
 
 	assign active = !pipeStall;

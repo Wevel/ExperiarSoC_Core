@@ -68,8 +68,10 @@ module RV32ICore(
 	wire[31:0] executeProgramCounter;
 
 	// Pipe control
+	wire progressPipe;
 	wire pipeActive;
 	wire stepPipe;
+	wire stallPipe;
 	wire stepProgramCounter;
 
 	// System registers
@@ -172,6 +174,46 @@ module RV32ICore(
 	wire[31:0] trapReturnVector;
 	wire inTrap;
 
+	// ----------State----------
+	FlowControl flowControl(
+		.clk(clk),
+		.rst(rst),
+		.management_allowInstruction(management_allowInstruction),
+		.stateExecute(state == STATE_EXECUTE),
+		.requestingInstruction(instruction_memoryEnable),
+		.instructionBusy(instruction_memoryBusy),
+		.requestingData(data_memoryEnable),
+		.dataBusy(data_memoryBusy),
+		.pipe0_active(pipe0_active),
+		.pipe1_active(pipe1_active),
+		.pipe2_active(pipe2_active),
+		.pipe1_shouldStall(pipe1_shouldStall),
+		.pipe2_shouldStall(pipe2_shouldStall),
+		.stepPipe(stepPipe),
+		.stallPipe(stallPipe),
+		.progressPipe(progressPipe));
+
+	ProgramCounter programCounter(
+		.clk(clk),
+		.rst(rst),
+		.management_writeProgramCounter_set(management_writeProgramCounter_set),
+		.management_writeProgramCounter_jump(management_writeProgramCounter_jump),
+		.management_writeData(management_writeData),
+		.state(state),
+		.progressPipe(progressPipe),
+		.stepPipe(stepPipe),
+		.stallPipe(stallPipe),
+		.inTrap(inTrap),
+		.trapVector(trapVector),
+		.pipe1_isRET(pipe1_isRET),
+		.trapReturnVector(trapReturnVector),
+		.pipe1_jumpEnable(pipe1_jumpEnable),
+		.pipe1_nextProgramCounter(pipe1_nextProgramCounter),
+		.fetchProgramCounter(fetchProgramCounter),
+		.nextFetchProgramCounter(nextFetchProgramCounter),
+		.executeProgramCounter(executeProgramCounter),
+		.stepProgramCounter(stepProgramCounter));
+
 	// ----------Pipe----------
 	wire pipe1_shouldStall;
 	wire pipe2_shouldStall;
@@ -180,15 +222,6 @@ module RV32ICore(
 
 	reg memoryOperationCompleted;
 	reg cancelStall;
-
-	wire fetchBusy = instruction_memoryEnable && instruction_memoryBusy;
-	wire loadStoreBusy = shouldStore || shouldLoad ? !memoryOperationCompleted : 1'b0;
-	wire stepBlocked = fetchBusy || loadStoreBusy;
-	wire progressPipe = pipeActive || management_allowInstruction;
-	wire stallPipe = !management_allowInstruction || pipe1_shouldStall || pipe2_shouldStall;
-	wire stallIncrementProgramCounter = !management_allowInstruction || pipe1_shouldStall;
-
-	assign stepPipe = (state == STATE_EXECUTE) && !stepBlocked;
 
 	// 0: Request instruction
 	wire pipe0_stall;
@@ -308,29 +341,31 @@ module RV32ICore(
 	end
 
 	reg useCachedLoad;
-	always @(posedge clk) begin
+	reg delayedStepPipe;
+	always @(negedge clk) begin
 		if (rst) begin
 			memoryOperationCompleted <= 1'b0;
 			useCachedLoad <= 1'b0;
 		end else begin
 			if (stateExecute) begin
-				if (stepPipe) begin
-					memoryOperationCompleted <= 0;
-					useCachedLoad <= memoryOperationCompleted && pipe1_memoryEnable;
+				if (delayedStepPipe || !pipe1_memoryEnable) begin
+					memoryOperationCompleted <= 1'b0;
+					useCachedLoad <= 1'b0;
 				end else begin
-					if (pipe1_memoryEnable) begin 
-						if (data_memoryBusy || instruction_memoryEnable) begin
-							useCachedLoad <= 1'b0;
-						end else begin
-							if (shouldLoad) begin
-								pipe1_loadResult <= data_memoryDataRead;
-								memoryOperationCompleted <= 1;
-							end else if (shouldStore) begin
-								memoryOperationCompleted <= 1;
-							end
+					if (data_memoryBusy || instruction_memoryEnable) begin
+						useCachedLoad <= 1'b0;
+					end else begin
+						if (shouldLoad) begin
+							pipe1_loadResult <= data_memoryDataRead;
+							memoryOperationCompleted <= 1;
+							useCachedLoad <= 1'b1;
+						end else if (shouldStore) begin
+							memoryOperationCompleted <= 1;
 						end
 					end
 				end
+
+				delayedStepPipe <= stepPipe;
 			end
 		end
 	end
@@ -403,28 +438,7 @@ module RV32ICore(
 	end
 
 	assign shouldStore = !memoryOperationCompleted && pipe1_memoryEnable && pipe1_memoryWriteEnable;
-	assign shouldLoad = !memoryOperationCompleted && (pipe1_memoryEnable && !pipe1_memoryWriteEnable);// || (!useCachedLoad && pipe2_expectingLoad);
-
-	ProgramCounter programCounter(
-		.clk(clk),
-		.rst(rst),
-		.management_writeProgramCounter_set(management_writeProgramCounter_set),
-		.management_writeProgramCounter_jump(management_writeProgramCounter_jump),
-		.management_writeData(management_writeData),
-		.state(state),
-		.progressPipe(progressPipe),
-		.stepPipe(stepPipe),
-		.stallPipe(stallPipe),
-		.inTrap(inTrap),
-		.trapVector(trapVector),
-		.pipe1_isRET(pipe1_isRET),
-		.trapReturnVector(trapReturnVector),
-		.pipe1_jumpEnable(pipe1_jumpEnable),
-		.pipe1_nextProgramCounter(pipe1_nextProgramCounter),
-		.fetchProgramCounter(fetchProgramCounter),
-		.nextFetchProgramCounter(nextFetchProgramCounter),
-		.executeProgramCounter(executeProgramCounter),
-		.stepProgramCounter(stepProgramCounter));
+	assign shouldLoad = !memoryOperationCompleted && (pipe1_memoryEnable && !pipe1_memoryWriteEnable);
 
 	// Memory control
 	assign instruction_memoryAddress = pipe0_instructionFetchAddress;
