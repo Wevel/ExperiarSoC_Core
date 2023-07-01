@@ -14,8 +14,8 @@ module CoreManagement (
 		input wire[31:0] management_readData,
 
 		// Address breakpoint
-		output wire isInstructionAddressBreakpoint,
-		output wire isDataAddressBreakpoint,
+		output reg isInstructionAddressBreakpoint,
+		output reg isDataAddressBreakpoint,
 		input wire[31:0] coreInstructionAddress,
 		input wire[31:0] coreDataAddress,
 
@@ -36,12 +36,6 @@ module CoreManagement (
 		output wire[31:0] wb_management_readData,
 		output wire wb_management_busy
 	);
-
-	// TODO instruction breakpoints
-	assign isInstructionAddressBreakpoint = 0;
-	assign isDataAddressBreakpoint = 0;
-	//assign isInstructionAddressBreakpoint = coreInstructionAddress == instructionBreakpointAddress;
-	//assign isDataAddressBreakpoint = coreDataAddress == dataBreakpointAddress;
 
 	// Master select
 	wire jtagSelect = jtag_management_enable;
@@ -68,12 +62,51 @@ module CoreManagement (
 	// Registers
 	// Control register: Default 0x0
 	// b00: run
-	// b01: unused
-	// b02: interruptEnable
-	wire[2:0] control;
-	wire[31:0] controlOutputData;
-	wire controlOutputRequest;
-	ConfigurationRegister #(.WIDTH(3), .ADDRESS(12'h000), .DEFAULT(3'b0)) controlRegister(
+	// b01: enableInterrupts
+	// b02: enableFetchAddressBreakpoint
+	// b03: enableDataAddressBreakpoint
+	reg[3:0] control;
+	wire[31:0] controlRegisterOutputData;
+	wire controlRegisterOutputRequest;
+	wire[3:0] controlWriteData;
+	wire controlWriteDataEnable;
+	wire controlRegisterBusy_nc;
+	wire controlRegisterReadDataEnable_nc;
+	DataRegister #(.WIDTH(4), .ADDRESS(12'h000)) controlRegister(
+		.clk(clk),
+		.rst(rst),
+		.enable(registerEnable),
+		.peripheralBus_we(peripheralBus_we),
+		.peripheralBus_oe(peripheralBus_oe),
+		.peripheralBus_busy(controlRegisterBusy_nc),
+		.peripheralBus_address(peripheralBus_address[11:0]),
+		.peripheralBus_byteSelect(peripheralBus_byteSelect),
+		.peripheralBus_dataWrite(peripheralBus_dataWrite),
+		.peripheralBus_dataRead(controlRegisterOutputData),
+		.requestOutput(controlRegisterOutputRequest),
+		.writeData(controlWriteData),
+		.writeData_en(controlWriteDataEnable),
+		.writeData_busy(1'b0),
+		.readData(control),
+		.readData_en(controlRegisterReadDataEnable_nc),
+		.readData_busy(1'b0));
+
+	always @(posedge clk) begin
+		if (rst) begin
+			control <= 4'b0;
+		end else begin
+			if (controlWriteDataEnable) control <= controlWriteData;
+			else if (isInstructionAddressBreakpoint || isDataAddressBreakpoint) control[0] <= 1'b0;
+		end
+	end
+
+	wire management_enableFetchAddressBreakpoint = control[2];
+	wire management_enableDataAddressBreakpoint = control[3];
+
+	wire[31:0] instructionBreakpointAddress;
+	wire[31:0] instructionBreakpointAddressOutputData;
+	wire instructionBreakpointAddressOutputRequest;
+	ConfigurationRegister #(.WIDTH(32), .ADDRESS(12'h004), .DEFAULT(~32'b0)) instructionBreakpointAddressRegister(
 		.clk(clk),
 		.rst(rst),
 		.enable(registerEnable),
@@ -82,19 +115,46 @@ module CoreManagement (
 		.peripheralBus_address(peripheralBus_address[11:0]),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
-		.peripheralBus_dataRead(controlOutputData),
-		.requestOutput(controlOutputRequest),
-		.currentValue(control));
+		.peripheralBus_dataRead(instructionBreakpointAddressOutputData),
+		.requestOutput(instructionBreakpointAddressOutputRequest),
+		.currentValue(instructionBreakpointAddress));
 
+	wire[31:0] dataBreakpointAddress;
+	wire[31:0] dataBreakpointAddressOutputData;
+	wire dataBreakpointAddressOutputRequest;
+	ConfigurationRegister #(.WIDTH(32), .ADDRESS(12'h008), .DEFAULT(~32'b0)) dataBreakpointAddressRegister(
+		.clk(clk),
+		.rst(rst),
+		.enable(registerEnable),
+		.peripheralBus_we(peripheralBus_we),
+		.peripheralBus_oe(peripheralBus_oe),
+		.peripheralBus_address(peripheralBus_address[11:0]),
+		.peripheralBus_byteSelect(peripheralBus_byteSelect),
+		.peripheralBus_dataWrite(peripheralBus_dataWrite),
+		.peripheralBus_dataRead(dataBreakpointAddressOutputData),
+		.requestOutput(dataBreakpointAddressOutputRequest),
+		.currentValue(dataBreakpointAddress));
+
+	always @(posedge clk) begin
+		if (rst) begin
+			isInstructionAddressBreakpoint <= 1'b0;
+			isDataAddressBreakpoint <= 1'b0;
+		end else begin
+			isInstructionAddressBreakpoint <= management_enableFetchAddressBreakpoint && (coreInstructionAddress == instructionBreakpointAddress);
+			isDataAddressBreakpoint <= management_enableDataAddressBreakpoint && (coreDataAddress == dataBreakpointAddress);
+		end
+	end
 	// Core
 	assign management_run = control[0];
-	assign management_interruptEnable = control[2];
+	assign management_interruptEnable = control[1];
 	assign management_writeEnable = coreEnable && peripheralBus_we;
 	assign management_byteSelect = peripheralBus_byteSelect;
 	assign management_address = peripheralBus_address[15:0];
 	assign management_writeData = peripheralBus_dataWrite;
 
-	assign peripheralBus_dataRead = coreEnable 			 ? management_readData :
-									controlOutputRequest ? controlOutputData   : ~32'b0;
+	assign peripheralBus_dataRead = coreEnable 			 					  ? management_readData 				   :
+									controlRegisterOutputRequest			  ? controlRegisterOutputData			   : 
+									instructionBreakpointAddressOutputRequest ? instructionBreakpointAddressOutputData : 
+									dataBreakpointAddressOutputRequest 		  ? dataBreakpointAddressOutputData 	   : ~32'b0;
 	
 endmodule
