@@ -182,7 +182,7 @@ module UARTDevice  #(
 	wire rxRegisterBusyBusy_nc;
 	wire[8:0] rxRegisterWriteData_nc;
 	wire rxRegisterWriteDataEnable_nc;
-	DataRegister #(.WIDTH(9), .ADDRESS(12'h0C0)) rxRegister(
+	DataRegister #(.WIDTH(9), .ADDRESS(12'h00C)) rxRegister(
 		.clk(clk),
 		.rst(rst),
 		.enable(deviceEnable),
