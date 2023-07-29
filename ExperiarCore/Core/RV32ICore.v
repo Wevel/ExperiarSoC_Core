@@ -234,6 +234,7 @@ module RV32ICore(
 	PipeFetch pipe0_fetch (
 		.clk(clk),
 		.rst(rst),
+		.run(management_allowInstruction),
 		.pipeStartup(management_pipeStartup),
 		.stepPipe(stepPipe),
 		.pipeStall(stallPipe),
@@ -261,8 +262,8 @@ module RV32ICore(
 
 	wire[4:0] pipe1_rs1Address;
 	wire[4:0] pipe1_rs2Address;
-	reg[31:0] pipe1_rs1Data;
-	reg[31:0] pipe1_rs2Data;
+	wire[31:0] pipe1_rs1Data;
+	wire[31:0] pipe1_rs2Data;
 	wire pipe1_operationResultStoreEnable;
 	wire[31:0] pipe1_operationResult;
 	wire pipe1_isJump;
@@ -325,7 +326,6 @@ module RV32ICore(
 	always @(posedge clk) begin
 		if (rst) begin
 			pipe1_resultRegister <= 32'b0;
-			pipe1_loadResult <= 32'b0;
 			pipe1_csrData <= 32'b0;
 			cancelStall <= 1'b0;
 		end else begin
@@ -340,32 +340,44 @@ module RV32ICore(
 		end
 	end
 
-	reg useCachedLoad;
 	reg delayedStepPipe;
+	reg storeLoadResult;
 	always @(negedge clk) begin
 		if (rst) begin
 			memoryOperationCompleted <= 1'b0;
-			useCachedLoad <= 1'b0;
+			storeLoadResult <= 1'b0;
 		end else begin
 			if (stateExecute) begin
 				if (delayedStepPipe || !pipe1_memoryEnable) begin
 					memoryOperationCompleted <= 1'b0;
-					useCachedLoad <= 1'b0;
+					storeLoadResult <= 1'b0;
 				end else begin
-					if (data_memoryBusy || instruction_memoryEnable) begin
-						useCachedLoad <= 1'b0;
+					if (data_memoryBusy) begin
+						storeLoadResult <= 1'b0;
 					end else begin
 						if (shouldLoad) begin
-							pipe1_loadResult <= data_memoryDataRead;
 							memoryOperationCompleted <= 1;
-							useCachedLoad <= 1'b1;
+							storeLoadResult <= 1'b1;
 						end else if (shouldStore) begin
 							memoryOperationCompleted <= 1;
+							storeLoadResult <= 1'b0;
 						end
 					end
 				end
 
 				delayedStepPipe <= stepPipe;
+			end
+		end
+	end
+
+	always @(posedge clk) begin
+		if (rst) begin
+			pipe1_loadResult <= ~32'b0;
+		end else begin
+			if (stateExecute) begin
+				if (storeLoadResult) begin
+					pipe1_loadResult <= data_memoryDataRead;
+				end
 			end
 		end
 	end
@@ -395,7 +407,7 @@ module RV32ICore(
 		.lastInstruction(pipe2_currentInstruction),
 		.invalidInstruction(pipe2_invalidInstruction),
 		.expectingLoad(pipe2_expectingLoad),
-		.memoryDataRead(useCachedLoad ? pipe1_loadResult : data_memoryDataRead),
+		.memoryDataRead(memoryOperationCompleted ? pipe1_loadResult : data_memoryDataRead),
 		.aluResultData(pipe1_resultRegister),
 		.csrData(pipe1_csrData),
 		.registerWriteAddress(pipe2_rdAddress),
@@ -411,26 +423,14 @@ module RV32ICore(
 	assign pipeActive = pipe0_active || pipe1_active || pipe2_active;
 
 	// Integer restister control
-	// Check if pipe1 needs the value being written by pipe2
-	always @(*) begin
-		if (pipe2_registerWriteEnable && pipe2_rdAddress == pipe1_rs1Address) begin
-			pipe1_rs1Data <= |pipe1_rs1Address ? pipe2_registerWriteData : 32'b0;
-		end else begin
-			pipe1_rs1Data <= |pipe1_rs1Address ? registers[pipe1_rs1Address] : 32'b0;
-		end
+	assign pipe1_rs1Data = |pipe1_rs1Address ? registers[pipe1_rs1Address] : 32'b0;
+	assign pipe1_rs2Data = |pipe1_rs2Address ? registers[pipe1_rs2Address] : 32'b0;
 
-		if (pipe2_registerWriteEnable && pipe2_rdAddress == pipe1_rs2Address) begin
-			pipe1_rs2Data <= |pipe1_rs2Address ? pipe2_registerWriteData : 32'b0;
-		end else begin
-			pipe1_rs2Data <= |pipe1_rs2Address ? registers[pipe1_rs2Address] : 32'b0;
-		end
-	end
-
-	always @(posedge clk) begin
+	always @(negedge clk) begin
 		if (rst) begin
 		end else begin
 			if (stateExecute) begin
-				if (stepPipe) begin
+				if (delayedStepPipe) begin
 					if (pipe2_registerWriteEnable && |pipe2_rdAddress) registers[pipe2_rdAddress] <= pipe2_registerWriteData;
 				end
 			end
