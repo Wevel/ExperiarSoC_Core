@@ -467,7 +467,7 @@ module RV32ICore(
 	wire[11:0] csrReadAddress = !management_run ? management_csrIndex : pipe1_csrReadAddress;
 	wire[31:0] csrWriteData = !management_run ? management_writeData : pipe2_csrWriteData;
 	
-	wire instructionCompleted = !pipe2_stall;
+	wire instructionCompleted = stepPipe && !pipe2_stall;
 	CSR csr(
 		.clk(clk),
 		.rst(rst),
