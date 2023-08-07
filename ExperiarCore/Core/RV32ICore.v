@@ -262,8 +262,8 @@ module RV32ICore(
 
 	wire[4:0] pipe1_rs1Address;
 	wire[4:0] pipe1_rs2Address;
-	wire[31:0] pipe1_rs1Data;
-	wire[31:0] pipe1_rs2Data;
+	reg[31:0] pipe1_rs1Data;
+	reg[31:0] pipe1_rs2Data;
 	wire pipe1_operationResultStoreEnable;
 	wire[31:0] pipe1_operationResult;
 	wire pipe1_isJump;
@@ -346,6 +346,7 @@ module RV32ICore(
 		if (rst) begin
 			memoryOperationCompleted <= 1'b0;
 			storeLoadResult <= 1'b0;
+			delayedStepPipe <= 1'b0;
 		end else begin
 			if (stateExecute) begin
 				if (delayedStepPipe || !pipe1_memoryEnable) begin
@@ -407,7 +408,7 @@ module RV32ICore(
 		.lastInstruction(pipe2_currentInstruction),
 		.invalidInstruction(pipe2_invalidInstruction),
 		.expectingLoad(pipe2_expectingLoad),
-		.memoryDataRead(memoryOperationCompleted ? pipe1_loadResult : data_memoryDataRead),
+		.memoryDataRead(pipe1_loadResult),
 		.aluResultData(pipe1_resultRegister),
 		.csrData(pipe1_csrData),
 		.registerWriteAddress(pipe2_rdAddress),
@@ -423,8 +424,20 @@ module RV32ICore(
 	assign pipeActive = pipe0_active || pipe1_active || pipe2_active;
 
 	// Integer restister control
-	assign pipe1_rs1Data = |pipe1_rs1Address ? registers[pipe1_rs1Address] : 32'b0;
-	assign pipe1_rs2Data = |pipe1_rs2Address ? registers[pipe1_rs2Address] : 32'b0;
+	// Check if pipe1 needs the value being written by pipe2
+	always @(*) begin
+		if (pipe2_registerWriteEnable && pipe2_rdAddress == pipe1_rs1Address) begin
+			pipe1_rs1Data <= |pipe1_rs1Address ? pipe2_registerWriteData : 32'b0;
+		end else begin
+			pipe1_rs1Data <= |pipe1_rs1Address ? registers[pipe1_rs1Address] : 32'b0;
+		end
+
+		if (pipe2_registerWriteEnable && pipe2_rdAddress == pipe1_rs2Address) begin
+			pipe1_rs2Data <= |pipe1_rs2Address ? pipe2_registerWriteData : 32'b0;
+		end else begin
+			pipe1_rs2Data <= |pipe1_rs2Address ? registers[pipe1_rs2Address] : 32'b0;
+		end
+	end
 
 	always @(negedge clk) begin
 		if (rst) begin

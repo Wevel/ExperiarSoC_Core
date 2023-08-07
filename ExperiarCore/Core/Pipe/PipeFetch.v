@@ -35,6 +35,8 @@ module PipeFetch #(
 		if (rst) begin
 			currentPipeStall <= 1'b1;
 			lastInstruction <= ~32'b0;
+			cachedInstruction <= 32'b0;
+			useCachedInstruction <= 1'b0;
 		end else begin
 			if (stepPipe) begin
 				currentPipeStall <= pipeStall;
@@ -44,6 +46,8 @@ module PipeFetch #(
 				useCachedInstruction <= 1'b0;
 			end else begin
 				useCachedInstruction <= instructionCached;
+
+				if (instructionCached && !useCachedInstruction) cachedInstruction <= currentInstruction;
 			end
 		end
 	end
@@ -52,15 +56,13 @@ module PipeFetch #(
 	reg delayedStepPipe;
 	always @(negedge clk) begin
 		if (rst) begin
-			instructionCached <= 1'b0;
-			cachedInstruction <= 32'b0;
+			instructionCached <= 1'b0;			
 		end else begin
 			if (stepPipe) begin
 				instructionCached <= 1'b0;
 			end else begin
 				if (!fetchBusy && fetchEnable) begin
 					instructionCached <= 1'b1;
-					cachedInstruction <= currentInstruction;
 				end
 			end
 			
