@@ -26,11 +26,11 @@ module LocalMemoryInterface #(
 
 		// SRAM rw port
 		output wire clk0, // Port clock
-		output wire[1:0] csb0, // active low chip select
-		output wire web0, // active low write control
-		output wire[3:0] wmask0, // write mask
-		output wire[SRAM_ADDRESS_SIZE-1:0] addr0,
-		output wire[31:0] din0,
+		output reg[1:0] csb0, // active low chip select
+		output reg web0, // active low write control
+		output reg[3:0] wmask0, // write mask
+		output reg[SRAM_ADDRESS_SIZE-1:0] addr0,
+		output reg[31:0] din0,
 		input  wire[63:0] dout0,
 
 		// SRAM r port
@@ -134,13 +134,32 @@ module LocalMemoryInterface #(
 
 	// SRAM connections
 	assign clk0 = clk;
-	assign csb0 = { !(rwPortEnable && rwBankSelect), !(rwPortEnable && !rwBankSelect) };
-	assign web0 = !rwWriteEnable;
-	assign wmask0 = coreSRAMWriteEnable ? coreByteSelect : 
-					wbSRAMWriteEnable   ? wbByteSelect   : 4'b0;
-	assign addr0 = rwAddress[SRAM_ADDRESS_SIZE-1:0];
-	assign din0 = coreSRAMWriteEnable ? coreDataWrite : 
-				  wbSRAMWriteEnable   ? wbDataWrite   : 32'b0;
+
+	always @(negedge clk) begin
+		if (rst) begin
+			csb0 <= 2'b11;
+			web0 <= 1'b1;
+			addr0 <= 'b0;
+			wmask0 <= 4'b0;
+			din0 <= 32'b0;
+		end else begin
+			csb0 <= { !(rwPortEnable && rwBankSelect), !(rwPortEnable && !rwBankSelect) };
+			web0 <= !rwWriteEnable;
+			addr0 <= rwAddress[SRAM_ADDRESS_SIZE-1:0];
+			
+			if (coreSRAMWriteEnable) begin
+				wmask0 <= coreByteSelect;
+				din0 <= coreDataWrite;
+			end else if (wbSRAMWriteEnable) begin
+				wmask0 <= wbByteSelect;
+				din0 <= wbDataWrite;
+			end else begin
+				wmask0 <= 4'b0;
+				din0 <= 32'b0;
+			end
+		end
+	end
+	
 	assign rwPortReadData = lastRWBankSelect ? dout0[63:32] : dout0[31:0];
 
 	assign clk1 = clk;
