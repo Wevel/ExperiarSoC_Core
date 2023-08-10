@@ -237,7 +237,7 @@ module RV32ICore(
 		.run(management_allowInstruction),
 		.pipeStartup(management_pipeStartup),
 		.stepPipe(stepPipe),
-		.pipeStall(stallPipe),
+		.pipeStall(stallPipe || inTrap), // TODO: Is inTrap being here correct, without it on an invalid instruction the instruction was skipped, but the jump to the trap vector was ignored
 		.currentPipeStall(pipe0_stall),
 		.active(pipe0_active),
 		.currentInstruction(instruction_memoryDataRead),
@@ -321,7 +321,7 @@ module RV32ICore(
 		.isEBREAK(pipe1_isEBREAK),
 		.isRET(pipe1_isRET));
 
-	assign pipe1_shouldStall = pipe1_isJump || pipe1_isFence || pipe1_isRET; // 
+	assign pipe1_shouldStall = pipe1_isJump || pipe1_isFence || pipe1_isRET;
 	
 	always @(posedge clk) begin
 		if (rst) begin
@@ -357,10 +357,10 @@ module RV32ICore(
 						storeLoadResult <= 1'b0;
 					end else begin
 						if (shouldLoad) begin
-							memoryOperationCompleted <= 1;
+							memoryOperationCompleted <= 1'b1;
 							storeLoadResult <= 1'b1;
 						end else if (shouldStore) begin
-							memoryOperationCompleted <= 1;
+							memoryOperationCompleted <= 1'b1;
 							storeLoadResult <= 1'b0;
 						end
 					end
@@ -401,7 +401,7 @@ module RV32ICore(
 		.clk(clk),
 		.rst(rst),
 		.stepPipe(stepPipe),
-		.pipeStall(pipe1_stall),
+		.pipeStall(pipe1_stall || pipe1_invalidInstruction),
 		.currentPipeStall(pipe2_stall),
 		.active(pipe2_active),
 		.currentInstruction(pipe1_currentInstruction),
