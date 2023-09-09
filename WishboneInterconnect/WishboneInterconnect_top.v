@@ -141,13 +141,6 @@ module WishboneInterconnect (
 		output wire[1:0] probe_slave5_currentMaster
 	);
 
-	localparam SLAVE0_ADDRESS = 4'h0;
-	localparam SLAVE1_ADDRESS = 4'h1;
-	localparam SLAVE2_ADDRESS = 4'h2;
-	localparam SLAVE3_ADDRESS = 4'h3;
-	localparam SLAVE4_ADDRESS = 4'h4;
-	localparam SLAVE5_ADDRESS = 4'h5;
-
 	// Disble master3
 	wire master3_wb_cyc_o = 1'b0;
 	wire master3_wb_stb_o = 1'b0;
@@ -161,37 +154,20 @@ module WishboneInterconnect (
 	reg[31:0] master3_wb_data_i;
 
 	// Master select signals
-	// Master 0
-	wire master0_slave0_select = master0_wb_adr_o[27:24] == SLAVE0_ADDRESS;
-	wire master0_slave1_select = master0_wb_adr_o[27:24] == SLAVE1_ADDRESS;
-	wire master0_slave2_select = master0_wb_adr_o[27:24] == SLAVE2_ADDRESS;
-	wire master0_slave3_select = master0_wb_adr_o[27:24] == SLAVE3_ADDRESS;
-	wire master0_slave4_select = master0_wb_adr_o[27:24] == SLAVE4_ADDRESS;
-	wire master0_slave5_select = master0_wb_adr_o[27:24] == SLAVE5_ADDRESS;
+	wire[5:0] master0_slave_select;
+	wire[5:0] master1_slave_select;
+	wire[5:0] master2_slave_select;
+	wire[5:0] master3_slave_select;
 
-	// Master 1
-	wire master1_slave0_select = master1_wb_adr_o[27:24] == SLAVE0_ADDRESS;
-	wire master1_slave1_select = master1_wb_adr_o[27:24] == SLAVE1_ADDRESS;
-	wire master1_slave2_select = master1_wb_adr_o[27:24] == SLAVE2_ADDRESS;
-	wire master1_slave3_select = master1_wb_adr_o[27:24] == SLAVE3_ADDRESS;
-	wire master1_slave4_select = master1_wb_adr_o[27:24] == SLAVE4_ADDRESS;
-	wire master1_slave5_select = master1_wb_adr_o[27:24] == SLAVE5_ADDRESS;
-
-	// Master 2
-	wire master2_slave0_select = master2_wb_adr_o[27:24] == SLAVE0_ADDRESS;
-	wire master2_slave1_select = master2_wb_adr_o[27:24] == SLAVE1_ADDRESS;
-	wire master2_slave2_select = master2_wb_adr_o[27:24] == SLAVE2_ADDRESS;
-	wire master2_slave3_select = master2_wb_adr_o[27:24] == SLAVE3_ADDRESS;
-	wire master2_slave4_select = master2_wb_adr_o[27:24] == SLAVE4_ADDRESS;
-	wire master2_slave5_select = master2_wb_adr_o[27:24] == SLAVE5_ADDRESS;
-
-	// Master 3
-	wire master3_slave0_select = master3_wb_adr_o[27:24] == SLAVE0_ADDRESS;
-	wire master3_slave1_select = master3_wb_adr_o[27:24] == SLAVE1_ADDRESS;
-	wire master3_slave2_select = master3_wb_adr_o[27:24] == SLAVE2_ADDRESS;
-	wire master3_slave3_select = master3_wb_adr_o[27:24] == SLAVE3_ADDRESS;
-	wire master3_slave4_select = master3_wb_adr_o[27:24] == SLAVE4_ADDRESS;
-	wire master3_slave5_select = master3_wb_adr_o[27:24] == SLAVE5_ADDRESS;
+	genvar slaveIndex;
+	generate
+		for (slaveIndex = 0; slaveIndex < 6; slaveIndex = slaveIndex + 1) begin
+			assign master0_slave_select[slaveIndex] = master0_wb_adr_o[27:24] == slaveIndex;
+			assign master1_slave_select[slaveIndex] = master1_wb_adr_o[27:24] == slaveIndex;
+			assign master2_slave_select[slaveIndex] = master2_wb_adr_o[27:24] == slaveIndex;
+			assign master3_slave_select[slaveIndex] = master3_wb_adr_o[27:24] == slaveIndex;
+		end
+	endgenerate
 
 	// Slave return signals
 	// Master 0
@@ -302,7 +278,7 @@ module WishboneInterconnect (
 	WishboneMultiMasterSlave slave0MultiMaster(
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave0_select),
+		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave_select[0]),
 		.master0_wb_stb_o(master0_wb_stb_o),
 		.master0_wb_we_o(master0_wb_we_o),
 		.master0_wb_sel_o(master0_wb_sel_o),
@@ -312,7 +288,7 @@ module WishboneInterconnect (
 		.master0_wb_stall_i(master0_slave0_wb_stall_i),
 		.master0_wb_error_i(master0_slave0_wb_error_i),
 		.master0_wb_data_i(master0_slave0_wb_data_i),
-		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave0_select),
+		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave_select[0]),
 		.master1_wb_stb_o(master1_wb_stb_o),
 		.master1_wb_we_o(master1_wb_we_o),
 		.master1_wb_sel_o(master1_wb_sel_o),
@@ -322,7 +298,7 @@ module WishboneInterconnect (
 		.master1_wb_stall_i(master1_slave0_wb_stall_i),
 		.master1_wb_error_i(master1_slave0_wb_error_i),
 		.master1_wb_data_i(master1_slave0_wb_data_i),
-		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave0_select),
+		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave_select[0]),
 		.master2_wb_stb_o(master2_wb_stb_o),
 		.master2_wb_we_o(master2_wb_we_o),
 		.master2_wb_sel_o(master2_wb_sel_o),
@@ -332,7 +308,7 @@ module WishboneInterconnect (
 		.master2_wb_stall_i(master2_slave0_wb_stall_i),
 		.master2_wb_error_i(master2_slave0_wb_error_i),
 		.master2_wb_data_i(master2_slave0_wb_data_i),
-		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave0_select),
+		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave_select[0]),
 		.master3_wb_stb_o(master3_wb_stb_o),
 		.master3_wb_we_o(master3_wb_we_o),
 		.master3_wb_sel_o(master3_wb_sel_o),
@@ -358,7 +334,7 @@ module WishboneInterconnect (
 	WishboneMultiMasterSlave slave1MultiMaster(
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave1_select),
+		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave_select[1]),
 		.master0_wb_stb_o(master0_wb_stb_o),
 		.master0_wb_we_o(master0_wb_we_o),
 		.master0_wb_sel_o(master0_wb_sel_o),
@@ -368,7 +344,7 @@ module WishboneInterconnect (
 		.master0_wb_stall_i(master0_slave1_wb_stall_i),
 		.master0_wb_error_i(master0_slave1_wb_error_i),
 		.master0_wb_data_i(master0_slave1_wb_data_i),
-		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave1_select),
+		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave_select[1]),
 		.master1_wb_stb_o(master1_wb_stb_o),
 		.master1_wb_we_o(master1_wb_we_o),
 		.master1_wb_sel_o(master1_wb_sel_o),
@@ -378,7 +354,7 @@ module WishboneInterconnect (
 		.master1_wb_stall_i(master1_slave1_wb_stall_i),
 		.master1_wb_error_i(master1_slave1_wb_error_i),
 		.master1_wb_data_i(master1_slave1_wb_data_i),
-		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave1_select),
+		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave_select[1]),
 		.master2_wb_stb_o(master2_wb_stb_o),
 		.master2_wb_we_o(master2_wb_we_o),
 		.master2_wb_sel_o(master2_wb_sel_o),
@@ -388,7 +364,7 @@ module WishboneInterconnect (
 		.master2_wb_stall_i(master2_slave1_wb_stall_i),
 		.master2_wb_error_i(master2_slave1_wb_error_i),
 		.master2_wb_data_i(master2_slave1_wb_data_i),
-		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave1_select),
+		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave_select[1]),
 		.master3_wb_stb_o(master3_wb_stb_o),
 		.master3_wb_we_o(master3_wb_we_o),
 		.master3_wb_sel_o(master3_wb_sel_o),
@@ -414,7 +390,7 @@ module WishboneInterconnect (
 	WishboneMultiMasterSlave slave2MultiMaster(
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave2_select),
+		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave_select[2]),
 		.master0_wb_stb_o(master0_wb_stb_o),
 		.master0_wb_we_o(master0_wb_we_o),
 		.master0_wb_sel_o(master0_wb_sel_o),
@@ -424,7 +400,7 @@ module WishboneInterconnect (
 		.master0_wb_stall_i(master0_slave2_wb_stall_i),
 		.master0_wb_error_i(master0_slave2_wb_error_i),
 		.master0_wb_data_i(master0_slave2_wb_data_i),
-		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave2_select),
+		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave_select[2]),
 		.master1_wb_stb_o(master1_wb_stb_o),
 		.master1_wb_we_o(master1_wb_we_o),
 		.master1_wb_sel_o(master1_wb_sel_o),
@@ -434,7 +410,7 @@ module WishboneInterconnect (
 		.master1_wb_stall_i(master1_slave2_wb_stall_i),
 		.master1_wb_error_i(master1_slave2_wb_error_i),
 		.master1_wb_data_i(master1_slave2_wb_data_i),
-		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave2_select),
+		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave_select[2]),
 		.master2_wb_stb_o(master2_wb_stb_o),
 		.master2_wb_we_o(master2_wb_we_o),
 		.master2_wb_sel_o(master2_wb_sel_o),
@@ -444,7 +420,7 @@ module WishboneInterconnect (
 		.master2_wb_stall_i(master2_slave2_wb_stall_i),
 		.master2_wb_error_i(master2_slave2_wb_error_i),
 		.master2_wb_data_i(master2_slave2_wb_data_i),
-		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave2_select),
+		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave_select[2]),
 		.master3_wb_stb_o(master3_wb_stb_o),
 		.master3_wb_we_o(master3_wb_we_o),
 		.master3_wb_sel_o(master3_wb_sel_o),
@@ -470,7 +446,7 @@ module WishboneInterconnect (
 	WishboneMultiMasterSlave slave3MultiMaster(
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave3_select),
+		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave_select[3]),
 		.master0_wb_stb_o(master0_wb_stb_o),
 		.master0_wb_we_o(master0_wb_we_o),
 		.master0_wb_sel_o(master0_wb_sel_o),
@@ -480,7 +456,7 @@ module WishboneInterconnect (
 		.master0_wb_stall_i(master0_slave3_wb_stall_i),
 		.master0_wb_error_i(master0_slave3_wb_error_i),
 		.master0_wb_data_i(master0_slave3_wb_data_i),
-		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave3_select),
+		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave_select[3]),
 		.master1_wb_stb_o(master1_wb_stb_o),
 		.master1_wb_we_o(master1_wb_we_o),
 		.master1_wb_sel_o(master1_wb_sel_o),
@@ -490,7 +466,7 @@ module WishboneInterconnect (
 		.master1_wb_stall_i(master1_slave3_wb_stall_i),
 		.master1_wb_error_i(master1_slave3_wb_error_i),
 		.master1_wb_data_i(master1_slave3_wb_data_i),
-		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave3_select),
+		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave_select[3]),
 		.master2_wb_stb_o(master2_wb_stb_o),
 		.master2_wb_we_o(master2_wb_we_o),
 		.master2_wb_sel_o(master2_wb_sel_o),
@@ -500,7 +476,7 @@ module WishboneInterconnect (
 		.master2_wb_stall_i(master2_slave3_wb_stall_i),
 		.master2_wb_error_i(master2_slave3_wb_error_i),
 		.master2_wb_data_i(master2_slave3_wb_data_i),
-		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave3_select),
+		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave_select[3]),
 		.master3_wb_stb_o(master3_wb_stb_o),
 		.master3_wb_we_o(master3_wb_we_o),
 		.master3_wb_sel_o(master3_wb_sel_o),
@@ -526,7 +502,7 @@ module WishboneInterconnect (
 	WishboneMultiMasterSlave slave4MultiMaster(
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave4_select),
+		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave_select[4]),
 		.master0_wb_stb_o(master0_wb_stb_o),
 		.master0_wb_we_o(master0_wb_we_o),
 		.master0_wb_sel_o(master0_wb_sel_o),
@@ -536,7 +512,7 @@ module WishboneInterconnect (
 		.master0_wb_stall_i(master0_slave4_wb_stall_i),
 		.master0_wb_error_i(master0_slave4_wb_error_i),
 		.master0_wb_data_i(master0_slave4_wb_data_i),
-		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave4_select),
+		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave_select[4]),
 		.master1_wb_stb_o(master1_wb_stb_o),
 		.master1_wb_we_o(master1_wb_we_o),
 		.master1_wb_sel_o(master1_wb_sel_o),
@@ -546,7 +522,7 @@ module WishboneInterconnect (
 		.master1_wb_stall_i(master1_slave4_wb_stall_i),
 		.master1_wb_error_i(master1_slave4_wb_error_i),
 		.master1_wb_data_i(master1_slave4_wb_data_i),
-		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave4_select),
+		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave_select[4]),
 		.master2_wb_stb_o(master2_wb_stb_o),
 		.master2_wb_we_o(master2_wb_we_o),
 		.master2_wb_sel_o(master2_wb_sel_o),
@@ -556,7 +532,7 @@ module WishboneInterconnect (
 		.master2_wb_stall_i(master2_slave4_wb_stall_i),
 		.master2_wb_error_i(master2_slave4_wb_error_i),
 		.master2_wb_data_i(master2_slave4_wb_data_i),
-		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave4_select),
+		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave_select[4]),
 		.master3_wb_stb_o(master3_wb_stb_o),
 		.master3_wb_we_o(master3_wb_we_o),
 		.master3_wb_sel_o(master3_wb_sel_o),
@@ -582,7 +558,7 @@ module WishboneInterconnect (
 	WishboneMultiMasterSlave slave5MultiMaster(
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave5_select),
+		.master0_wb_cyc_o(master0_wb_cyc_o && master0_slave_select[5]),
 		.master0_wb_stb_o(master0_wb_stb_o),
 		.master0_wb_we_o(master0_wb_we_o),
 		.master0_wb_sel_o(master0_wb_sel_o),
@@ -592,7 +568,7 @@ module WishboneInterconnect (
 		.master0_wb_stall_i(master0_slave5_wb_stall_i),
 		.master0_wb_error_i(master0_slave5_wb_error_i),
 		.master0_wb_data_i(master0_slave5_wb_data_i),
-		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave5_select),
+		.master1_wb_cyc_o(master1_wb_cyc_o && master1_slave_select[5]),
 		.master1_wb_stb_o(master1_wb_stb_o),
 		.master1_wb_we_o(master1_wb_we_o),
 		.master1_wb_sel_o(master1_wb_sel_o),
@@ -602,7 +578,7 @@ module WishboneInterconnect (
 		.master1_wb_stall_i(master1_slave5_wb_stall_i),
 		.master1_wb_error_i(master1_slave5_wb_error_i),
 		.master1_wb_data_i(master1_slave5_wb_data_i),
-		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave5_select),
+		.master2_wb_cyc_o(master2_wb_cyc_o && master2_slave_select[5]),
 		.master2_wb_stb_o(master2_wb_stb_o),
 		.master2_wb_we_o(master2_wb_we_o),
 		.master2_wb_sel_o(master2_wb_sel_o),
@@ -612,7 +588,7 @@ module WishboneInterconnect (
 		.master2_wb_stall_i(master2_slave5_wb_stall_i),
 		.master2_wb_error_i(master2_slave5_wb_error_i),
 		.master2_wb_data_i(master2_slave5_wb_data_i),
-		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave5_select),
+		.master3_wb_cyc_o(master3_wb_cyc_o && master3_slave_select[5]),
 		.master3_wb_stb_o(master3_wb_stb_o),
 		.master3_wb_we_o(master3_wb_we_o),
 		.master3_wb_sel_o(master3_wb_sel_o),
@@ -638,42 +614,42 @@ module WishboneInterconnect (
 	// Master 0
 	always @(*) begin
 		case (1'b1)
-			master0_slave0_select: begin
+			master0_slave_select[0]: begin
 				master0_wb_ack_i <= master0_slave0_wb_ack_i;
 				master0_wb_stall_i <= master0_slave0_wb_stall_i;
 				master0_wb_error_i <= master0_slave0_wb_error_i;
 				master0_wb_data_i <= master0_slave0_wb_data_i;
 			end
 			
-			master0_slave1_select: begin
+			master0_slave_select[1]: begin
 				master0_wb_ack_i <= master0_slave1_wb_ack_i;
 				master0_wb_stall_i <= master0_slave1_wb_stall_i;
 				master0_wb_error_i <= master0_slave1_wb_error_i;
 				master0_wb_data_i <= master0_slave1_wb_data_i;
 			end
 			
-			master0_slave2_select: begin
+			master0_slave_select[2]: begin
 				master0_wb_ack_i <= master0_slave2_wb_ack_i;
 				master0_wb_stall_i <= master0_slave2_wb_stall_i;
 				master0_wb_error_i <= master0_slave2_wb_error_i;
 				master0_wb_data_i <= master0_slave2_wb_data_i;
 			end
 			
-			master0_slave3_select: begin
+			master0_slave_select[3]: begin
 				master0_wb_ack_i <= master0_slave3_wb_ack_i;
 				master0_wb_stall_i <= master0_slave3_wb_stall_i;
 				master0_wb_error_i <= master0_slave3_wb_error_i;
 				master0_wb_data_i <= master0_slave3_wb_data_i;
 			end
 			
-			master0_slave4_select: begin
+			master0_slave_select[4]: begin
 				master0_wb_ack_i <= master0_slave4_wb_ack_i;
 				master0_wb_stall_i <= master0_slave4_wb_stall_i;
 				master0_wb_error_i <= master0_slave4_wb_error_i;
 				master0_wb_data_i <= master0_slave4_wb_data_i;
 			end
 
-			master0_slave5_select: begin
+			master0_slave_select[5]: begin
 				master0_wb_ack_i <= master0_slave5_wb_ack_i;
 				master0_wb_stall_i <= master0_slave5_wb_stall_i;
 				master0_wb_error_i <= master0_slave5_wb_error_i;
@@ -693,42 +669,42 @@ module WishboneInterconnect (
 	// Master 1
 	always @(*) begin
 		case (1'b1)
-			master1_slave0_select: begin
+			master1_slave_select[0]: begin
 				master1_wb_ack_i <= master1_slave0_wb_ack_i;
 				master1_wb_stall_i <= master1_slave0_wb_stall_i;
 				master1_wb_error_i <= master1_slave0_wb_error_i;
 				master1_wb_data_i <= master1_slave0_wb_data_i;
 			end
 			
-			master1_slave1_select: begin
+			master1_slave_select[1]: begin
 				master1_wb_ack_i <= master1_slave1_wb_ack_i;
 				master1_wb_stall_i <= master1_slave1_wb_stall_i;
 				master1_wb_error_i <= master1_slave1_wb_error_i;
 				master1_wb_data_i <= master1_slave1_wb_data_i;
 			end
 			
-			master1_slave2_select: begin
+			master1_slave_select[2]: begin
 				master1_wb_ack_i <= master1_slave2_wb_ack_i;
 				master1_wb_stall_i <= master1_slave2_wb_stall_i;
 				master1_wb_error_i <= master1_slave2_wb_error_i;
 				master1_wb_data_i <= master1_slave2_wb_data_i;
 			end
 			
-			master1_slave3_select: begin
+			master1_slave_select[3]: begin
 				master1_wb_ack_i <= master1_slave3_wb_ack_i;
 				master1_wb_stall_i <= master1_slave3_wb_stall_i;
 				master1_wb_error_i <= master1_slave3_wb_error_i;
 				master1_wb_data_i <= master1_slave3_wb_data_i;
 			end
 			
-			master1_slave4_select: begin
+			master1_slave_select[4]: begin
 				master1_wb_ack_i <= master1_slave4_wb_ack_i;
 				master1_wb_stall_i <= master1_slave4_wb_stall_i;
 				master1_wb_error_i <= master1_slave4_wb_error_i;
 				master1_wb_data_i <= master1_slave4_wb_data_i;
 			end
 
-			master1_slave5_select: begin
+			master1_slave_select[5]: begin
 				master1_wb_ack_i <= master1_slave5_wb_ack_i;
 				master1_wb_stall_i <= master1_slave5_wb_stall_i;
 				master1_wb_error_i <= master1_slave5_wb_error_i;
@@ -748,42 +724,42 @@ module WishboneInterconnect (
 	// Master 2
 	always @(*) begin
 		case (1'b1)
-			master2_slave0_select: begin
+			master2_slave_select[0]: begin
 				master2_wb_ack_i <= master2_slave0_wb_ack_i;
 				master2_wb_stall_i <= master2_slave0_wb_stall_i;
 				master2_wb_error_i <= master2_slave0_wb_error_i;
 				master2_wb_data_i <= master2_slave0_wb_data_i;
 			end
 			
-			master2_slave1_select: begin
+			master2_slave_select[1]: begin
 				master2_wb_ack_i <= master2_slave1_wb_ack_i;
 				master2_wb_stall_i <= master2_slave1_wb_stall_i;
 				master2_wb_error_i <= master2_slave1_wb_error_i;
 				master2_wb_data_i <= master2_slave1_wb_data_i;
 			end
 			
-			master2_slave2_select: begin
+			master2_slave_select[2]: begin
 				master2_wb_ack_i <= master2_slave2_wb_ack_i;
 				master2_wb_stall_i <= master2_slave2_wb_stall_i;
 				master2_wb_error_i <= master2_slave2_wb_error_i;
 				master2_wb_data_i <= master2_slave2_wb_data_i;
 			end
 			
-			master2_slave3_select: begin
+			master2_slave_select[3]: begin
 				master2_wb_ack_i <= master2_slave3_wb_ack_i;
 				master2_wb_stall_i <= master2_slave3_wb_stall_i;
 				master2_wb_error_i <= master2_slave3_wb_error_i;
 				master2_wb_data_i <= master2_slave3_wb_data_i;
 			end
 			
-			master2_slave4_select: begin
+			master2_slave_select[4]: begin
 				master2_wb_ack_i <= master2_slave4_wb_ack_i;
 				master2_wb_stall_i <= master2_slave4_wb_stall_i;
 				master2_wb_error_i <= master2_slave4_wb_error_i;
 				master2_wb_data_i <= master2_slave4_wb_data_i;
 			end
 
-			master2_slave5_select: begin
+			master2_slave_select[5]: begin
 				master2_wb_ack_i <= master2_slave5_wb_ack_i;
 				master2_wb_stall_i <= master2_slave5_wb_stall_i;
 				master2_wb_error_i <= master2_slave5_wb_error_i;
@@ -803,42 +779,42 @@ module WishboneInterconnect (
 	// Master 3
 	always @(*) begin
 		case (1'b1)
-			master3_slave0_select: begin
+			master3_slave_select[0]: begin
 				master3_wb_ack_i <= master3_slave0_wb_ack_i;
 				master3_wb_stall_i <= master3_slave0_wb_stall_i;
 				master3_wb_error_i <= master3_slave0_wb_error_i;
 				master3_wb_data_i <= master3_slave0_wb_data_i;
 			end
 			
-			master3_slave1_select: begin
+			master3_slave_select[1]: begin
 				master3_wb_ack_i <= master3_slave1_wb_ack_i;
 				master3_wb_stall_i <= master3_slave1_wb_stall_i;
 				master3_wb_error_i <= master3_slave1_wb_error_i;
 				master3_wb_data_i <= master3_slave1_wb_data_i;
 			end
 			
-			master3_slave2_select: begin
+			master3_slave_select[2]: begin
 				master3_wb_ack_i <= master3_slave2_wb_ack_i;
 				master3_wb_stall_i <= master3_slave2_wb_stall_i;
 				master3_wb_error_i <= master3_slave2_wb_error_i;
 				master3_wb_data_i <= master3_slave2_wb_data_i;
 			end
 			
-			master3_slave3_select: begin
+			master3_slave_select[3]: begin
 				master3_wb_ack_i <= master3_slave3_wb_ack_i;
 				master3_wb_stall_i <= master3_slave3_wb_stall_i;
 				master3_wb_error_i <= master3_slave3_wb_error_i;
 				master3_wb_data_i <= master3_slave3_wb_data_i;
 			end
 			
-			master3_slave4_select: begin
+			master3_slave_select[4]: begin
 				master3_wb_ack_i <= master3_slave4_wb_ack_i;
 				master3_wb_stall_i <= master3_slave4_wb_stall_i;
 				master3_wb_error_i <= master3_slave4_wb_error_i;
 				master3_wb_data_i <= master3_slave4_wb_data_i;
 			end
 
-			master3_slave5_select: begin
+			master3_slave_select[5]: begin
 				master3_wb_ack_i <= master3_slave5_wb_ack_i;
 				master3_wb_stall_i <= master3_slave5_wb_stall_i;
 				master3_wb_error_i <= master3_slave5_wb_error_i;
