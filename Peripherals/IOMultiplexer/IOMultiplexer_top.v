@@ -23,8 +23,8 @@ module IOMultiplexer (
 		input  wire[0:0] spi_cs,
 
 		// PWM
-		input wire[7:0] pwm_en,
-		input wire[7:0] pwm_out,
+		input wire[3:0] pwm_en,
+		input wire[3:0] pwm_out,
 
 		// GPIO
 		output wire[`MPRJ_IO_PADS-1:0] gpio_input,
@@ -42,15 +42,16 @@ module IOMultiplexer (
 		output wire jtag_tdi,
 		input wire jtag_tdo,
 
-		// Flash
-		input wire flash_csb,
-		input wire flash_sck,
-		input wire flash_io0_we,
-		input wire flash_io0_write,
-		output wire flash_io0_read,
-		input wire flash_io1_we,
-		input wire flash_io1_write,
-		output wire flash_io1_read,
+		// Cached Memory
+		input wire[1:0] cachedMemory_en,
+		input wire[1:0] cachedMemory_csb,
+		input wire[1:0] cachedMemory_sck,
+		input wire[1:0] cachedMemory_io0_we,
+		input wire[1:0] cachedMemory_io0_write,
+		output wire[1:0] cachedMemory_io0_read,
+		input wire[1:0] cachedMemory_io1_we,
+		input wire[1:0] cachedMemory_io1_write,
+		output wire[1:0] cachedMemory_io1_read,
 
 		// IRQ
 		input wire irq_en,
@@ -104,22 +105,22 @@ module IOMultiplexer (
 	// IO05: GPIO05 or UART1_RX
 	// IO06: GPIO06 or UART1_TX
 	// IO07: GPIO07 or IRQ
-	// IO08: FLASH_CSB
-	// IO09: FLASH_SCK
-	// IO10: FLASH_IO0
-	// IO11: FLASH_IO1
-	// IO12: GPIO12 or PWM0
-	// IO13: GPIO13 or PWM1
-	// IO14: GPIO14 or PWM2
-	// IO15: GPIO15 or PWM3
-	// IO16: GPIO16 or PWM4
-	// IO17: GPIO17 or PWM5
-	// IO18: GPIO18 or PWM6
+	// IO08: GPIO08 or CachedMemory0_CSB
+	// IO09: GPIO09 or CachedMemory0_SCK
+	// IO10: GPIO10 or CachedMemory0_IO0
+	// IO11: GPIO11 or CachedMemory0_IO1
+	// IO12: GPIO12 or CachedMemory1_CSB
+	// IO13: GPIO13 or CachedMemory1_SCK
+	// IO14: GPIO14 or CachedMemory1_IO0
+	// IO15: GPIO15 or CachedMemory1_IO1
+	// IO16: GPIO16 or PWM0
+	// IO17: GPIO17 or PWM1
+	// IO18: GPIO18 or PWM2
 
 	// GPIO1 (user2 side)
 	// IO19: GPIO19 or UART2_RX
 	// IO20: GPIO20 or UART2_TX
-	// IO21: GPIO21 or PWM7
+	// IO21: GPIO21 or PWM3
 	// IO22: GPIO22 or SPI0_CLK
 	// IO23: GPIO23 or SPI0_MOSI
 	// IO24: GPIO24 or SPI0_MISO
@@ -191,73 +192,75 @@ module IOMultiplexer (
 	assign io_oeb[PIN_IRQ] = irq_en ? 1'b1 : gpio_oe[PIN_IRQ];
 	assign irq_in = irq_en ? io_in[PIN_IRQ] : 1'b0;
 	
-	// IO08-PIN_FLASH_CSB: Output
-	localparam PIN_FLASH_CSB = 8;
-	assign gpio_input[PIN_FLASH_CSB] = 1'b0;
-	assign io_out[PIN_FLASH_CSB] = flash_csb;
-	assign io_oeb[PIN_FLASH_CSB] = 1'b0;
+	// IO08-PIN_CACHEDMEMORY0_CSB: Output
+	localparam PIN_CACHEDMEMORY0_CSB = 8;
+	assign gpio_input[PIN_CACHEDMEMORY0_CSB] = cachedMemory_en[0] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY0_CSB] ? io_in[PIN_CACHEDMEMORY0_CSB] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY0_CSB] = cachedMemory_en[0] ? cachedMemory_csb[0] : gpio_output[PIN_CACHEDMEMORY0_CSB];
+	assign io_oeb[PIN_CACHEDMEMORY0_CSB] = cachedMemory_en[0] ? 1'b0 : gpio_oe[PIN_CACHEDMEMORY0_CSB];
 	
-	// IO09-PIN_FLASH_SCK: Output
-	localparam PIN_FLASH_SCK = 9;
-	assign gpio_input[PIN_FLASH_SCK] = 1'b0;
-	assign io_out[PIN_FLASH_SCK] = flash_sck;
-	assign io_oeb[PIN_FLASH_SCK] = 1'b0;
+	// IO09-PIN_CACHEDMEMORY0_SCK: Output
+	localparam PIN_CACHEDMEMORY0_SCK = 9;
+	assign gpio_input[PIN_CACHEDMEMORY0_SCK] = cachedMemory_en[0] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY0_SCK] ? io_in[PIN_CACHEDMEMORY0_SCK] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY0_SCK] = cachedMemory_en[0] ? cachedMemory_sck[0] : gpio_output[PIN_CACHEDMEMORY0_SCK];
+	assign io_oeb[PIN_CACHEDMEMORY0_SCK] = cachedMemory_en[0] ? 1'b0 : gpio_oe[PIN_CACHEDMEMORY0_SCK];
 	
-	// IO10-PIN_FLASH_IO0: InOut
-	localparam PIN_FLASH_IO0 = 10;
-	assign gpio_input[PIN_FLASH_IO0] = 1'b0;
-	assign io_out[PIN_FLASH_IO0] = flash_io0_write;
-	assign io_oeb[PIN_FLASH_IO0] = !flash_io0_we;
-	assign flash_io0_read = !flash_io0_we ? io_in[PIN_FLASH_IO0] : 1'b0;
+	// IO10-PIN_CACHEDMEMORY0_IO0: InOut
+	localparam PIN_CACHEDMEMORY0_IO0 = 10;
+	assign gpio_input[PIN_CACHEDMEMORY0_IO0] = cachedMemory_en[0] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY0_IO0] ? io_in[PIN_CACHEDMEMORY0_IO0] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY0_IO0] = cachedMemory_en[0] ? cachedMemory_io0_write[0] : gpio_output[PIN_CACHEDMEMORY0_IO0];
+	assign io_oeb[PIN_CACHEDMEMORY0_IO0] = cachedMemory_en[0] ? !cachedMemory_io0_we[0] : gpio_oe[PIN_CACHEDMEMORY0_IO0];
+	assign cachedMemory_io0_read[0] = cachedMemory_en[0] && !cachedMemory_io0_we[0] ? io_in[PIN_CACHEDMEMORY0_IO0] : 1'b0;
 	
-	// IO11-PIN_FLASH_IO1: InOut
-	localparam PIN_FLASH_IO1 = 11;
-	assign gpio_input[PIN_FLASH_IO1] = 1'b0;
-	assign io_out[PIN_FLASH_IO1] = flash_io1_write;
-	assign io_oeb[PIN_FLASH_IO1] = !flash_io1_we;
-	assign flash_io1_read = !flash_io1_we ? io_in[PIN_FLASH_IO1] : 1'b0;
+	// IO11-PIN_CACHEDMEMORY0_IO1: InOut
+	localparam PIN_CACHEDMEMORY0_IO1 = 11;
+	assign gpio_input[PIN_CACHEDMEMORY0_IO1] = cachedMemory_en[0] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY0_IO1] ? io_in[PIN_CACHEDMEMORY0_IO1] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY0_IO1] = cachedMemory_en[0] ? cachedMemory_io1_write[0] : gpio_output[PIN_CACHEDMEMORY0_IO1];
+	assign io_oeb[PIN_CACHEDMEMORY0_IO1] = cachedMemory_en[0] ? !cachedMemory_io1_we[0] : gpio_oe[PIN_CACHEDMEMORY0_IO1];
+	assign cachedMemory_io1_read[0] = cachedMemory_en[0] && !cachedMemory_io1_we[0] ? io_in[PIN_CACHEDMEMORY0_IO1] : 1'b0;
 	
-	// IO12-PIN_PWM0: Output
-	localparam PIN_PWM0 = 12;
+	// IO12-PIN_CACHEDMEMORY1_CSB: Output
+	localparam PIN_CACHEDMEMORY1_CSB = 12;
+	assign gpio_input[PIN_CACHEDMEMORY1_CSB] = cachedMemory_en[1] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY1_CSB] ? io_in[PIN_CACHEDMEMORY1_CSB] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY1_CSB] = cachedMemory_en[1] ? cachedMemory_csb[1] : gpio_output[PIN_CACHEDMEMORY1_CSB];
+	assign io_oeb[PIN_CACHEDMEMORY1_CSB] = cachedMemory_en[1] ? 1'b0 : gpio_oe[PIN_CACHEDMEMORY1_CSB];
+	
+	// IO13-PIN_CACHEDMEMORY1_SCK: Output
+	localparam PIN_CACHEDMEMORY1_SCK = 13;
+	assign gpio_input[PIN_CACHEDMEMORY1_SCK] = cachedMemory_en[1] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY1_SCK] ? io_in[PIN_CACHEDMEMORY1_SCK] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY1_SCK] = cachedMemory_en[1] ? cachedMemory_sck[1] : gpio_output[PIN_CACHEDMEMORY1_SCK];
+	assign io_oeb[PIN_CACHEDMEMORY1_SCK] = cachedMemory_en[1] ? 1'b0 : gpio_oe[PIN_CACHEDMEMORY1_SCK];
+	
+	// IO14-PIN_CACHEDMEMORY1_IO0: InOut
+	localparam PIN_CACHEDMEMORY1_IO0 = 14;
+	assign gpio_input[PIN_CACHEDMEMORY1_IO0] = cachedMemory_en[1] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY1_IO0] ? io_in[PIN_CACHEDMEMORY1_IO0] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY1_IO0] = cachedMemory_en[1] ? cachedMemory_io0_write[1] : gpio_output[PIN_CACHEDMEMORY1_IO0];
+	assign io_oeb[PIN_CACHEDMEMORY1_IO0] = cachedMemory_en[1] ? !cachedMemory_io0_we[1] : gpio_oe[PIN_CACHEDMEMORY1_IO0];
+	assign cachedMemory_io0_read[1] = cachedMemory_en[1] && !cachedMemory_io0_we[1] ? io_in[PIN_CACHEDMEMORY1_IO0] : 1'b0;
+	
+	// IO15-PIN_CACHEDMEMORY1_IO1: InOut
+	localparam PIN_CACHEDMEMORY1_IO1 = 15;
+	assign gpio_input[PIN_CACHEDMEMORY1_IO1] = cachedMemory_en[1] ? 1'b0 : (gpio_oe[PIN_CACHEDMEMORY1_IO1] ? io_in[PIN_CACHEDMEMORY1_IO1] : 1'b0);
+	assign io_out[PIN_CACHEDMEMORY1_IO1] = cachedMemory_en[1] ? cachedMemory_io1_write[1] : gpio_output[PIN_CACHEDMEMORY1_IO1];
+	assign io_oeb[PIN_CACHEDMEMORY1_IO1] = cachedMemory_en[1] ? !cachedMemory_io1_we[1] : gpio_oe[PIN_CACHEDMEMORY1_IO1];
+	assign cachedMemory_io1_read[1] = cachedMemory_en[1] && !cachedMemory_io1_we[1] ? io_in[PIN_CACHEDMEMORY1_IO1] : 1'b0;
+	
+	// IO16-PIN_PWM0: Output
+	localparam PIN_PWM0 = 16;
 	assign gpio_input[PIN_PWM0] = pwm_en[0] ? 1'b0 : (gpio_oe[PIN_PWM0] ? io_in[PIN_PWM0] : 1'b0);
 	assign io_out[PIN_PWM0] = pwm_en[0] ? pwm_out[0] : gpio_output[PIN_PWM0];
 	assign io_oeb[PIN_PWM0] = pwm_en[0] ? 1'b0 : gpio_oe[PIN_PWM0];
 	
-	// IO13-PIN_PWM1: Output
-	localparam PIN_PWM1 = 13;
+	// IO17-PIN_PWM1: Output
+	localparam PIN_PWM1 = 17;
 	assign gpio_input[PIN_PWM1] = pwm_en[1] ? 1'b0 : (gpio_oe[PIN_PWM1] ? io_in[PIN_PWM1] : 1'b0);
 	assign io_out[PIN_PWM1] = pwm_en[1] ? pwm_out[1] : gpio_output[PIN_PWM1];
 	assign io_oeb[PIN_PWM1] = pwm_en[1] ? 1'b0 : gpio_oe[PIN_PWM1];
 	
-	// IO14-PIN_PWM2: Output
-	localparam PIN_PWM2 = 14;
+	// IO18-PIN_PWM2: Output
+	localparam PIN_PWM2 = 18;
 	assign gpio_input[PIN_PWM2] = pwm_en[2] ? 1'b0 : (gpio_oe[PIN_PWM2] ? io_in[PIN_PWM2] : 1'b0);
 	assign io_out[PIN_PWM2] = pwm_en[2] ? pwm_out[2] : gpio_output[PIN_PWM2];
 	assign io_oeb[PIN_PWM2] = pwm_en[2] ? 1'b0 : gpio_oe[PIN_PWM2];
-	
-	// IO15-PIN_PWM3: Output
-	localparam PIN_PWM3 = 15;
-	assign gpio_input[PIN_PWM3] = pwm_en[3] ? 1'b0 : (gpio_oe[PIN_PWM3] ? io_in[PIN_PWM3] : 1'b0);
-	assign io_out[PIN_PWM3] = pwm_en[3] ? pwm_out[3] : gpio_output[PIN_PWM3];
-	assign io_oeb[PIN_PWM3] = pwm_en[3] ? 1'b0 : gpio_oe[PIN_PWM3];
-	
-	// IO16-PIN_PWM4: Output
-	localparam PIN_PWM4 = 16;
-	assign gpio_input[PIN_PWM4] = pwm_en[4] ? 1'b0 : (gpio_oe[PIN_PWM4] ? io_in[PIN_PWM4] : 1'b0);
-	assign io_out[PIN_PWM4] = pwm_en[4] ? pwm_out[4] : gpio_output[PIN_PWM4];
-	assign io_oeb[PIN_PWM4] = pwm_en[4] ? 1'b0 : gpio_oe[PIN_PWM4];
-	
-	// IO17-PIN_PWM5: Output
-	localparam PIN_PWM5 = 17;
-	assign gpio_input[PIN_PWM5] = pwm_en[5] ? 1'b0 : (gpio_oe[PIN_PWM5] ? io_in[PIN_PWM5] : 1'b0);
-	assign io_out[PIN_PWM5] = pwm_en[5] ? pwm_out[5] : gpio_output[PIN_PWM5];
-	assign io_oeb[PIN_PWM5] = pwm_en[5] ? 1'b0 : gpio_oe[PIN_PWM5];
-	
-	// IO18-PIN_PWM6: Output
-	localparam PIN_PWM6 = 18;
-	assign gpio_input[PIN_PWM6] = pwm_en[6] ? 1'b0 : (gpio_oe[PIN_PWM6] ? io_in[PIN_PWM6] : 1'b0);
-	assign io_out[PIN_PWM6] = pwm_en[6] ? pwm_out[6] : gpio_output[PIN_PWM6];
-	assign io_oeb[PIN_PWM6] = pwm_en[6] ? 1'b0 : gpio_oe[PIN_PWM6];
 	
 	// IO19-PIN_UART2_RX: Input
 	localparam PIN_UART2_RX = 19;
@@ -272,11 +275,11 @@ module IOMultiplexer (
 	assign io_out[PIN_UART2_TX] = uart_en[2] ? uart_tx[2] : gpio_output[PIN_UART2_TX];
 	assign io_oeb[PIN_UART2_TX] = uart_en[2] ? 1'b0 : gpio_oe[PIN_UART2_TX];
 	
-	// IO21-PIN_PWM7: Output
-	localparam PIN_PWM7 = 21;
-	assign gpio_input[PIN_PWM7] = pwm_en[7] ? 1'b0 : (gpio_oe[PIN_PWM7] ? io_in[PIN_PWM7] : 1'b0);
-	assign io_out[PIN_PWM7] = pwm_en[7] ? pwm_out[7] : gpio_output[PIN_PWM7];
-	assign io_oeb[PIN_PWM7] = pwm_en[7] ? 1'b0 : gpio_oe[PIN_PWM7];
+	// IO21-PIN_PWM3: Output
+	localparam PIN_PWM3 = 21;
+	assign gpio_input[PIN_PWM3] = pwm_en[3] ? 1'b0 : (gpio_oe[PIN_PWM3] ? io_in[PIN_PWM3] : 1'b0);
+	assign io_out[PIN_PWM3] = pwm_en[3] ? pwm_out[3] : gpio_output[PIN_PWM3];
+	assign io_oeb[PIN_PWM3] = pwm_en[3] ? 1'b0 : gpio_oe[PIN_PWM3];
 	
 	// IO22-PIN_SPI0_CLK: Output
 	localparam PIN_SPI0_CLK = 22;
