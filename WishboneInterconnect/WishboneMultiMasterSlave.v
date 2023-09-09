@@ -105,27 +105,27 @@ module WishboneMultiMasterSlave (
 							  			  master0_wb_adr_o;
 
 	// Master 0
-	assign master0_wb_ack_i   = slave_ack_o;
-	assign master0_wb_stall_i = slave_stall_o;
-	assign master0_wb_error_i = slave_error_o;
+	assign master0_wb_ack_i   = master0Select ? slave_ack_o : 1'b0;
+	assign master0_wb_stall_i = master0Select ? slave_stall_o : 1'b0;
+	assign master0_wb_error_i = master0Select ? slave_error_o : 1'b0;
 	assign master0_wb_data_i  = slave_data_o;
 
 	// Master 1
-	assign master1_wb_ack_i   = slave_ack_o;
-	assign master1_wb_stall_i = slave_stall_o;
-	assign master1_wb_error_i = slave_error_o;
+	assign master1_wb_ack_i   = master1Select ? slave_ack_o : 1'b0;
+	assign master1_wb_stall_i = master1Select ? slave_stall_o : 1'b0;
+	assign master1_wb_error_i = master1Select ? slave_error_o : 1'b0;
 	assign master1_wb_data_i  = slave_data_o;
 
 	// Master 2
-	assign master2_wb_ack_i   = slave_ack_o;
-	assign master2_wb_stall_i = slave_stall_o;
-	assign master2_wb_error_i = slave_error_o;
+	assign master2_wb_ack_i   = master2Select ? slave_ack_o : 1'b0;
+	assign master2_wb_stall_i = master2Select ? slave_stall_o : 1'b0;
+	assign master2_wb_error_i = master2Select ? slave_error_o : 1'b0;
 	assign master2_wb_data_i  = slave_data_o;
 
 	// Master 3
-	assign master3_wb_ack_i   = slave_ack_o;
-	assign master3_wb_stall_i = slave_stall_o;
-	assign master3_wb_error_i = slave_error_o;
+	assign master3_wb_ack_i   = master3Select ? slave_ack_o : 1'b0;
+	assign master3_wb_stall_i = master3Select ? slave_stall_o : 1'b0;
+	assign master3_wb_error_i = master3Select ? slave_error_o : 1'b0;
 	assign master3_wb_data_i  = slave_data_o;
 
 	// Assign logic probes
