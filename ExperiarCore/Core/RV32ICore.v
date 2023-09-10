@@ -351,7 +351,7 @@ module RV32ICore(
 			if (stateExecute) begin
 				if (delayedStepPipe || !pipe1_memoryEnable) begin
 					memoryOperationCompleted <= 1'b0;
-					storeLoadResult <= 1'b0;
+					storeLoadResult <= pipe1_memoryEnable;
 				end else begin
 					if (data_memoryBusy) begin
 						storeLoadResult <= 1'b0;
@@ -408,7 +408,7 @@ module RV32ICore(
 		.lastInstruction(pipe2_currentInstruction),
 		.invalidInstruction(pipe2_invalidInstruction),
 		.expectingLoad(pipe2_expectingLoad),
-		.memoryDataRead(pipe1_loadResult),
+		.memoryDataRead(storeLoadResult ? data_memoryDataRead : pipe1_loadResult),
 		.aluResultData(pipe1_resultRegister),
 		.csrData(pipe1_csrData),
 		.registerWriteAddress(pipe2_rdAddress),
