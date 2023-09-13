@@ -203,8 +203,8 @@ module LocalMemoryInterface #(
 			assign rwPortReadData = dout0;
 			assign rPortReadData = dout1;
 		end else if (BLOCK_COUNT == 2) begin
-			assign rwPortReadData = ~32'b0 & (dout0 >> (lastRWBankSelectAddress * 32));
-			assign rPortReadData = ~32'b0 & (dout1 >> (lastRBankSelectAddress * 32));
+			assign rwPortReadData = lastRWBankSelectAddress ? dout0[63:32] : dout0[31:0];
+			assign rPortReadData = lastRBankSelectAddress ? dout1[63:32] : dout1[31:0];
 		end
 	endgenerate
 
