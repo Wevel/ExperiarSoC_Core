@@ -102,7 +102,7 @@ module Core_WBInterface #(
 	end
 
 	assign wb_cyc_o = state != STATE_IDLE && wbEnable;
-	assign wb_stb_o = stb && wbEnable;
+	assign wb_stb_o = wb_cyc_o;
 
 	assign wb_we_o = state == STATE_WRITE_SINGLE;
 		
