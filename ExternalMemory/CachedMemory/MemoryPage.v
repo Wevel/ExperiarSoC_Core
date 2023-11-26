@@ -26,6 +26,7 @@ module MemoryPage #(
 
 		// Cache control SRAM access
 		output wire[SRAM_ADDRESS_SIZE+1:0] cacheSRAMAddress,
+		input wire cacheSRAMBusy,
 
 		output reg pageValid,
 		output wire wordReady,
@@ -103,6 +104,21 @@ module MemoryPage #(
 	assign qspi_address = { currentPageAddress[ADDRESS_SIZE-PAGE_DATA_ADDRESS_SIZE-2-1:0], {PAGE_DATA_ADDRESS_SIZE{1'b0}}, 2'b00 };
 	assign qspi_changeAddress = pendingAddressChange && (pageLoading || pageFlushing) && !qspi_busy;
 
+	reg memoryOperationPending;
+	always @(posedge clk) begin
+		if (rst) begin
+			memoryOperationPending <= 1'b0;
+		end else begin
+			if (memoryOperationPending) begin
+				if (!cacheSRAMBusy) memoryOperationPending <= 1'b0;
+			end if (pageLoading || pageFlushing) begin
+				if (qspi_wordComplete && cacheSRAMBusy) memoryOperationPending <= 1'b1;
+			end else begin
+				memoryOperationPending <= 1'b0;
+			end
+		end
+	end
+
 	reg pendingLoad;
 	reg[23:0] pendingLoadAddress;
 
@@ -133,7 +149,7 @@ module MemoryPage #(
 				STATE_LOADING: begin
 					if (automaticPagingChanged) begin
 						state <= STATE_EMPTY;
-					end else if (!pendingAddressChange && qspi_wordComplete && pageLoading) begin
+					end else if (!pendingAddressChange && (qspi_wordComplete || memoryOperationPending) && pageLoading && !cacheSRAMBusy) begin
 						if (nextCachedCount == cachedCountFinal) begin
 							state <= STATE_LOADED;
 							cachedCount <= nextCachedCount;
@@ -177,7 +193,7 @@ module MemoryPage #(
 
 				STATE_FLUSHING: begin
 					if (!pendingAddressChange) begin
-						if (qspi_wordComplete && pageFlushing) begin
+						if ((qspi_wordComplete || memoryOperationPending) && pageFlushing && !cacheSRAMBusy) begin
 							if (nextCachedCount == cachedCountFinal) begin
 								if (pendingLoad) begin
 									state <= STATE_LOADING;

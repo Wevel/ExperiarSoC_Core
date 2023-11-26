@@ -128,6 +128,7 @@ module MemoryCache #(
 				.busVirtualAddress(busVirtualAddress),
 				.busPhysicalAddress(page_busPhysicalAddress[generatePageIndex]),
 				.cacheSRAMAddress(page_cacheSRAMAddress[generatePageIndex]),
+				.cacheSRAMBusy(cacheSRAMBusy),
 				.pageValid(pageValid[generatePageIndex]),
 				.wordReady(wordReady[generatePageIndex]),
 				.qspi_enable(qspi_enable),
