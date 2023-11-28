@@ -108,8 +108,6 @@ module UARTDevice  #(
 	wire clearRegisterRequestOutput_nc;
 	wire clearRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(4), .ADDRESS(12'h004)) clearRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -141,8 +139,6 @@ module UARTDevice  #(
 	wire statusRegisterWriteDataEnable_nc;
 	wire statusRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(6), .ADDRESS(12'h008)) statusRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -183,8 +179,6 @@ module UARTDevice  #(
 	wire[8:0] rxRegisterWriteData_nc;
 	wire rxRegisterWriteDataEnable_nc;
 	DataRegister #(.WIDTH(9), .ADDRESS(12'h00C)) rxRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -214,8 +208,6 @@ module UARTDevice  #(
 	wire txBusy;
 	wire txRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(8), .ADDRESS(12'h010)) txRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),

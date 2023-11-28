@@ -27,6 +27,4 @@ module MisalignedMemoryController (
 		input wire internal_addressBreakpoint
 	);
 	
-
-
 endmodule

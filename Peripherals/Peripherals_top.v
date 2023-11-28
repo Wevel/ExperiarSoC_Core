@@ -252,11 +252,11 @@ module Peripherals (
 
 	always @(*) begin
 		case (1'b1)
-			uart_requestOutput: peripheralBus_dataRead <= uart_peripheralBus_dataRead;
-			spi_requestOutput:  peripheralBus_dataRead <= spi_peripheralBus_dataRead;
-			pwm_requestOutput:  peripheralBus_dataRead <= pwm_peripheralBus_dataRead;
-			gpio_requestOutput: peripheralBus_dataRead <= gpio_peripheralBus_dataRead;
-			default: 			peripheralBus_dataRead <= ~32'b0;
+			uart_requestOutput: peripheralBus_dataRead = uart_peripheralBus_dataRead;
+			spi_requestOutput:  peripheralBus_dataRead = spi_peripheralBus_dataRead;
+			pwm_requestOutput:  peripheralBus_dataRead = pwm_peripheralBus_dataRead;
+			gpio_requestOutput: peripheralBus_dataRead = gpio_peripheralBus_dataRead;
+			default: 			peripheralBus_dataRead = ~32'b0;
 		endcase
 	end
 

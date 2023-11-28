@@ -283,8 +283,7 @@ module ExperiarCore (
 		.wbBusy(coreWBBusy));
 
 	LocalMemoryInterface #(
-		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE),
-		.BLOCK_ADDRESS_SIZE(1)
+		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE+1)
 	) localMemoryInterface (
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),

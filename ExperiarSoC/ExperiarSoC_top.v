@@ -1,6 +1,8 @@
 `default_nettype none
 
-module ExperiarSoC (
+`include "../defines.v"
+
+module ExperiarSoC_top (
 `ifdef USE_POWER_PINS
 		inout vccd1,	// User area 1 1.8V supply
 		inout vssd1,	// User area 1 digital ground
@@ -25,7 +27,7 @@ module ExperiarSoC (
 		input  wire[`MPRJ_IO_PADS-1:0] io_in,
 		output wire[`MPRJ_IO_PADS-1:0] io_out,
 		output wire[`MPRJ_IO_PADS-1:0] io_oeb,
-		
+
 		// Caravel
 		input wire caravel_uart_rx,
 		output wire caravel_uart_tx,
@@ -42,9 +44,9 @@ module ExperiarSoC (
 		input wire[15:0] partID,
 		input wire[3:0] versionID
 	);
-	
+
 	localparam SRAM_ADDRESS_SIZE = 9;
-	
+
 	// JTAG
 	wire jtag_tck;
 	wire jtag_tms;
@@ -316,7 +318,7 @@ module ExperiarSoC (
 	//-------------------------------------------------//
 	//----------------------CORE0----------------------//
 	//-------------------------------------------------//
-	
+
 	// JTAG interface
 	wire core0_tdi;
 	wire core0_tdo;
@@ -445,11 +447,11 @@ module ExperiarSoC (
 	//-------------------------------------------------//
 	//----------------------CORE1----------------------//
 	//-------------------------------------------------//
-	
+
 	// JTAG interface
 	wire core1_tdi;
 	wire core1_tdo;
-	
+
 	// SRAM rw port
 	wire core1SRAM_clk0;
 	wire[1:0] core1SRAM_csb0;
@@ -592,7 +594,7 @@ module ExperiarSoC (
 
 	genvar cachedMemoryIndex;
 	generate
-		for (cachedMemoryIndex = 0; cachedMemoryIndex < 2; cachedMemoryIndex = cachedMemoryIndex + 1) begin	
+		for (cachedMemoryIndex = 0; cachedMemoryIndex < 2; cachedMemoryIndex = cachedMemoryIndex + 1) begin
 			CachedMemory cachedMemory(
 `ifdef USE_POWER_PINS
 				.vccd1(vccd1),	// User area 1 1.8V power

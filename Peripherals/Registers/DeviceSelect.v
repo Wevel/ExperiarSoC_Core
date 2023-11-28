@@ -1,5 +1,8 @@
 `default_nettype none
 
+`ifndef DEVICE_SELECT_V
+`define DEVICE_SELECT_V
+
 module DeviceSelect #(
 		parameter ID = 4'h0
 	)(
@@ -13,3 +16,5 @@ module DeviceSelect #(
 	assign localAddress = peripheralBus_address[11:0];
 
 endmodule
+
+`endif

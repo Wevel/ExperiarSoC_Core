@@ -80,22 +80,22 @@ module RV32ICore(
 	// State control
 	always @(posedge clk) begin
 		if (rst) begin
-			state <= STATE_HALT;
+			state = STATE_HALT;
 		end else begin
 			case (state)
 				STATE_HALT: begin
 					if (progressPipe) begin
-						state <= STATE_EXECUTE;
+						state = STATE_EXECUTE;
 					end
 				end
 
 				STATE_EXECUTE: begin
 					if (stepPipe) begin
-						if (!progressPipe) state <= STATE_HALT;
+						if (!progressPipe) state = STATE_HALT;
 					end
 				end
 
-				default: state <= STATE_HALT;
+				default: state = STATE_HALT;
 			endcase
 		end
 	end
@@ -155,11 +155,11 @@ module RV32ICore(
 
 	always @(*) begin
 		case (1'b1)
-			management_readProgramCounter: management_dataOut <= fetchProgramCounter;
-			management_readInstructionRegister : management_dataOut <= pipe1_currentInstruction;
-			management_readRegister: management_dataOut <= !management_registerIndex ? registers[management_registerIndex] : 32'b0;
-			management_readCSR: management_dataOut <= csrReadData;
-			default: management_dataOut <= ~32'b0;
+			management_readProgramCounter: management_dataOut = fetchProgramCounter;
+			management_readInstructionRegister : management_dataOut = pipe1_currentInstruction;
+			management_readRegister: management_dataOut = !management_registerIndex ? registers[management_registerIndex] : 32'b0;
+			management_readCSR: management_dataOut = csrReadData;
+			default: management_dataOut = ~32'b0;
 		endcase
 	end
 

@@ -1,5 +1,10 @@
 `default_nettype none
 
+`ifndef QSPIDevice_V
+`define QSPIDevice_V
+
+`include "../../Utility/ShiftRegister.v"
+
 module QSPIDevice (
 		input wire clk,
 		input wire rst,
@@ -30,7 +35,7 @@ module QSPIDevice (
 		output wire device_io1_write,  // Unused (constant 1'b0)
 		input wire device_io1_read
 	);
-	
+
 	localparam STATE_IDLE = 2'h0;
 	localparam STATE_SETUP = 2'h1;
 	localparam STATE_SHIFT = 2'h2;
@@ -44,6 +49,7 @@ module QSPIDevice (
 	assign device_io0_we = 1'b1;
 	assign device_io1_we = 1'b0;
 	assign device_io1_write = 1'b0;
+	wire _unused_device_io0_read = device_io0_read;
 
 	// State control
 	reg[1:0] state = STATE_IDLE;
@@ -53,10 +59,10 @@ module QSPIDevice (
 	reg settingAddress = 1'b0;
 	reg[3:0] clockCounter;
 
-	reg outputClock = 1'b0;	
+	reg outputClock = 1'b0;
 	reg[4:0] bitCounter = 5'b0;
 	wire[4:0] nextBitCounter = bitCounter + 1;
-	
+
 	wire shiftInEnable  = outputClock && deviceBusy && clockCounter == clockScale;
 	wire shiftOutEnable = !outputClock && deviceBusy && clockCounter == clockScale;
 
@@ -77,11 +83,11 @@ module QSPIDevice (
 
 	always @(*) begin
 		case (1'b1)
-			resetState == RESET_START: registerLoadData <= { 8'hFF, 8'h00, 8'h00, 8'h00 };
-			resetState == RESET_WAKE: registerLoadData <= { 8'hAB, 8'h00, 8'h00, 8'h00 };
-			qspi_changeAddress: registerLoadData <= { qspi_storeData ? 8'h02 : 8'h03, qspi_address };
-			qspi_storeData && !qspi_changeAddress && !settingAddress: registerLoadData <= qspi_writeData;
-			default: registerLoadData <= 32'b0;
+			resetState == RESET_START: registerLoadData = { 8'hFF, 8'h00, 8'h00, 8'h00 };
+			resetState == RESET_WAKE: registerLoadData = { 8'hAB, 8'h00, 8'h00, 8'h00 };
+			qspi_changeAddress: registerLoadData = { qspi_storeData ? 8'h02 : 8'h03, qspi_address };
+			qspi_storeData && !qspi_changeAddress && !settingAddress: registerLoadData = qspi_writeData;
+			default: registerLoadData = 32'b0;
 		endcase
 	end
 
@@ -118,7 +124,7 @@ module QSPIDevice (
 				outputClock <= 1'b0;
 				qspi_wordComplete <= 1'b0;
 				qspi_busy <= 1'b0;
-			end else begin				
+			end else begin
 				case (state)
 					STATE_IDLE: begin
 						outputClock <= 1'b0;
@@ -134,7 +140,7 @@ module QSPIDevice (
 					end
 
 					STATE_SETUP: begin
-						if (clockCounter == 4'h0) state <= STATE_SHIFT;						
+						if (clockCounter == 4'h0) state <= STATE_SHIFT;
 						bitCounter <= 5'b0;
 						outputClock <= 1'b1;
 						qspi_wordComplete <= 1'b0;
@@ -167,7 +173,7 @@ module QSPIDevice (
 						if (qspi_requestData || qspi_storeData) begin
 							state <= STATE_SETUP;
 							qspi_busy <= 1'b1;
-						end else begin 
+						end else begin
 							state <= STATE_IDLE;
 							qspi_busy <= 1'b0;
 						end
@@ -175,7 +181,7 @@ module QSPIDevice (
 						outputClock <= 1'b0;
 						settingAddress <= 1'b0;
 						qspi_wordComplete <= 1'b0;
-						
+
 						if (resetState == RESET_START) begin
 							resetState <= RESET_WAKE;
 						end else begin
@@ -209,3 +215,5 @@ module QSPIDevice (
 	assign device_csb = !deviceBusy;
 
 endmodule
+
+`endif

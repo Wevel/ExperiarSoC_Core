@@ -1,5 +1,8 @@
 `default_nettype none
 
+`ifndef OUTPUT_REGISTER_V
+`define OUTPUT_REGISTER_V
+
 module OutputRegister #(
 		parameter WIDTH = 32,
 		parameter ADDRESS = 8'b0,
@@ -20,7 +23,7 @@ module OutputRegister #(
 
 		output wire[WIDTH-1:0] currentValue
 	);
-	
+
 	localparam WRITE_ADDRESS = 4'h0;
 	localparam SET_ADDRESS = 4'h4;
 	localparam CLEAR_ADDRESS = 4'h8;
@@ -41,7 +44,7 @@ module OutputRegister #(
 	reg[WIDTH-1:0] registerValue;
 
 	wire[31:0] maskedDataWrite = peripheralBus_dataWrite & dataMask;
-	
+
 	wire[31:0] writeData = maskedDataWrite | (registerValue & ~dataMask);
 	wire[31:0] setData = registerValue | maskedDataWrite;
 	wire[31:0] clearData = registerValue & ~maskedDataWrite;
@@ -79,3 +82,5 @@ module OutputRegister #(
 	assign currentValue = registerValue;
 
 endmodule
+
+`endif

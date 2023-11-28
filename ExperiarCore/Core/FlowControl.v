@@ -37,4 +37,4 @@ module FlowControl(
 	assign stepPipe = stateExecute && !stepBlocked;
 	assign progressPipe = pipeActive || management_allowInstruction;
 	
-endmodule
+

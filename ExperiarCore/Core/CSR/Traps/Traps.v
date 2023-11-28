@@ -60,26 +60,26 @@ module Traps (
 	always @(*) begin
 		if (isInterrupt) begin
 			case (1'b1)
-				isMachineSoftwareInterrupt: trapCause <= 30'd3;
-				isMachineTimerInterrupt: trapCause <= 30'd7;
-				|userInterrupts: trapCause <= 30'd8;
-				isMachineExternalInterrupt: trapCause <= 30'd11;
-				default: trapCause <= 30'b0;
+				isMachineSoftwareInterrupt: trapCause = 30'd3;
+				isMachineTimerInterrupt: trapCause = 30'd7;
+				|userInterrupts: trapCause = 30'd8;
+				isMachineExternalInterrupt: trapCause = 30'd11;
+				default: trapCause = 30'b0;
 			endcase
 		end else begin
 			case (1'b1)
-				isFetchAddressBreakpoint: trapCause <= 30'd3;
-				isFetchAccessFault: trapCause <= 30'd1;
-				isInvalidInstruction: trapCause <= 30'd2;
-				misalignedInstructionFetch: trapCause <= 30'd0;
-				isECALL: trapCause <= 30'd11;
-				isEBREAK: trapCause <= 30'd3;
-				isDataAddressBreakpoint: trapCause <= 30'd3;
-				isDataAddressMisaligned_store: trapCause <= 30'd6;
-				isDataAddressMisaligned_load: trapCause <= 30'd4;
-				isDataAccessFault_store: trapCause <= 30'd7;
-				isDataAccessFault_load: trapCause <= 30'd5;				
-				default: trapCause <= 30'b0;
+				isFetchAddressBreakpoint: trapCause = 30'd3;
+				isFetchAccessFault: trapCause = 30'd1;
+				isInvalidInstruction: trapCause = 30'd2;
+				misalignedInstructionFetch: trapCause = 30'd0;
+				isECALL: trapCause = 30'd11;
+				isEBREAK: trapCause = 30'd3;
+				isDataAddressBreakpoint: trapCause = 30'd3;
+				isDataAddressMisaligned_store: trapCause = 30'd6;
+				isDataAddressMisaligned_load: trapCause = 30'd4;
+				isDataAccessFault_store: trapCause = 30'd7;
+				isDataAccessFault_load: trapCause = 30'd5;				
+				default: trapCause = 30'b0;
 			endcase
 		end		
 	end
@@ -125,14 +125,14 @@ module Traps (
 	always @(*) begin
 		 if (isTrap) begin
 			 case (1'b1)
-				 isBreakPoint: mtvalLoadValue <= programCounter;
-				 isFetchAddressMisaligned: mtvalLoadValue <= instruction_memoryAddress;
-				 isDataAddressMisaligned_store || isDataAddressMisaligned_load: mtvalLoadValue <=  data_memoryAddress;
-				 isInvalidInstruction: mtvalLoadValue <= currentInstruction;
-				 default: mtvalLoadValue <= 32'b0;
+				 isBreakPoint: mtvalLoadValue = programCounter;
+				 isFetchAddressMisaligned: mtvalLoadValue = instruction_memoryAddress;
+				 isDataAddressMisaligned_store || isDataAddressMisaligned_load: mtvalLoadValue =  data_memoryAddress;
+				 isInvalidInstruction: mtvalLoadValue = currentInstruction;
+				 default: mtvalLoadValue = 32'b0;
 			 endcase			
 		 end else begin
-			 mtvalLoadValue <= 32'b0;
+			 mtvalLoadValue = 32'b0;
 		 end 
 	end
 
@@ -372,15 +372,15 @@ module Traps (
 
 	always @(*) begin
 		case (1'b1)
-			mstatusRequestOutput: csrReadData <= mstatusReadData;
-			mieRequestOutput: csrReadData <= mieReadData;
-			mtvecRequestOutput: csrReadData <= mtvecReadData;
-			mscratchRequestOutput: csrReadData <= mscratchReadData;
-			mepcRequestOutput: csrReadData <= mepcReadData;
-			mcauseRequestOutput: csrReadData <= mcauseReadData;
-			mtvalRequestOutput: csrReadData <= mtvalReadData;
-			mipRequestOutput: csrReadData <= mipReadData;
-			default: csrReadData <= 32'b0;
+			mstatusRequestOutput: csrReadData = mstatusReadData;
+			mieRequestOutput: csrReadData = mieReadData;
+			mtvecRequestOutput: csrReadData = mtvecReadData;
+			mscratchRequestOutput: csrReadData = mscratchReadData;
+			mepcRequestOutput: csrReadData = mepcReadData;
+			mcauseRequestOutput: csrReadData = mcauseReadData;
+			mtvalRequestOutput: csrReadData = mtvalReadData;
+			mipRequestOutput: csrReadData = mipReadData;
+			default: csrReadData = 32'b0;
 		endcase
 	end
 

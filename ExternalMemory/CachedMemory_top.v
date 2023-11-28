@@ -1,6 +1,8 @@
 `default_nettype none
 
-module CachedMemory (
+`include "Cache/CacheManagement.v"
+
+module CachedMemory_top (
 	`ifdef USE_POWER_PINS
 		inout vccd1,	// User area 1 1.8V supply
 		inout vssd1,	// User area 1 digital ground
@@ -31,25 +33,27 @@ module CachedMemory (
 		output wire qspi_io1_write,
 		input wire qspi_io1_read,
 
-		// SRAM rw port
-		output wire sram_clk0,
-		output wire sram_csb0,
-		output wire sram_web0,
-		output wire[3:0] sram_wmask0,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram_addr0,
-		output wire[31:0] sram_din0,
-		input wire[31:0] sram_dout0,
+		// Controller SRAM rw port
+		output wire sram_primarySelect,
+		output wire sram_primaryWriteEnable,
+		output wire[3:0] sram_primaryWriteMask,
+		output wire[SRAM_ADDRESS_SIZE-1:0] sram_primaryAddress,
+		output wire[31:0] sram_primaryDataWrite,
+		input wire[31:0] sram_primaryDataRead,
 
-		// SRAM r port
-		output wire sram_clk1,
-		output wire sram_csb1,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram_addr1,
-		input wire[31:0] sram_dout1
+		// Wishbone SRAM r port
+		output wire sram_secondarySelect,
+		output wire[SRAM_ADDRESS_SIZE-1:0] sram_secondaryAddress,
+		input wire[31:0] sram_secondaryDataRead
 	);
 
 	localparam ADDRESS_SIZE = 24;
 	localparam SRAM_ADDRESS_SIZE = 9;
 	localparam PAGE_INDEX_ADDRESS_SIZE = 4;
+
+	localparam PAGE_NUMBER_ADDRESS_SIZE = (ADDRESS_SIZE - PAGE_DATA_ADDRESS_SIZE - 2);
+	localparam PAGE_DATA_ADDRESS_SIZE = (SRAM_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
+	localparam MANUAL_PAGE_ADDRESS_SIZE = (PAGE_NUMBER_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
 
 	localparam PAGE_COUNT = (1 << PAGE_INDEX_ADDRESS_SIZE);
 
@@ -111,11 +115,14 @@ module CachedMemory (
 	wire cacheEnable;
 	wire automaticPaging;
 	wire manualPageAddressSet;
-	wire[23-SRAM_ADDRESS_SIZE-2:0] manualPageAddress;
+	wire[MANUAL_PAGE_ADDRESS_SIZE-1:0] manualPageAddress;
 	wire writeEnable;
 	wire[3:0] clockScale;
-	wire modeChanged;
+	wire[PAGE_COUNT-1:0] pageAddressSet;
+	wire[PAGE_COUNT-1:0] pageRequestLoad;
+	wire[PAGE_COUNT-1:0] pageRequestFlush;
 	CacheManagement #(
+		.ADDRESS_SIZE(ADDRESS_SIZE),
 		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE),
 		.PAGE_INDEX_ADDRESS_SIZE(PAGE_INDEX_ADDRESS_SIZE)
 	) cacheManagement (
@@ -128,33 +135,30 @@ module CachedMemory (
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(peripheralBus_dataRead),
 		.peripheralBus_busy(peripheralBus_busy),
-		.busMemoryEnable(busMemoryEnable),	
-		.busMemoryWriteEnable(busMemoryWriteEnable),	
-		.busMemoryAddress(busMemoryVirtualAddress),	
-		.busMemoryByteSelect(busMemoryByteSelect),	
+		.busMemoryEnable(busMemoryEnable),
+		.busMemoryWriteEnable(busMemoryWriteEnable),
+		.busMemoryAddress(busMemoryVirtualAddress),
+		.busMemoryByteSelect(busMemoryByteSelect),
 		.busMemoryDataWrite(busMemoryDataWrite),
-		.busMemoryDataRead(busMemoryDataRead),	
-		.busMemoryBusy(busMemoryCacheBusy || busMemoryBusy),	
+		.busMemoryDataRead(busMemoryDataRead),
+		.busMemoryBusy(busMemoryCacheBusy || busMemoryBusy),
 		.cacheEnable(cacheEnable),
 		.automaticPaging(automaticPaging),
 		.manualPageAddressSet(manualPageAddressSet),
 		.manualPageAddress(manualPageAddress),
 		.writeEnable(writeEnable),
 		.clockScale(clockScale),
-		.modeChanged(modeChanged),
 		.cacheInitialised(qspi_initialised),
 		.cacheRequestData(qspi_requestData),
 		.cacheStoreData(qspi_storeData),
 		.cacheBusy(busMemoryBusy),
 		.pageAddressSet(pageAddressSet),
-		.pageRequestLoad(pageRequestLoad)
-	);
+		.pageRequestLoad(pageRequestLoad),
+		.pageRequestFlush(pageRequestFlush));
 
 	assign qspi_enable = cacheEnable;
 
 	// Cache controller
-	wire[PAGE_COUNT-1:0] pageAddressSet;
-	wire[PAGE_COUNT-1:0] pageRequestLoad;
 	wire cacheSRAMEnable;
 	wire cacheSRAMWriteEnable;
 	wire[SRAM_ADDRESS_SIZE+1:0] cacheSRAMAddress;
@@ -189,7 +193,8 @@ module CachedMemory (
 		.qspi_initialised(qspi_initialised),
 		.qspi_busy(qspi_busy),
 		.pageAddressSet(pageAddressSet),
-		.pageRequestLoad(pageRequestLoad));
+		.pageRequestLoad(pageRequestLoad),
+		.pageRequestFlush(pageRequestFlush));
 
 	// QSPI controller
 	QSPIDevice qspiDevice (
@@ -219,8 +224,7 @@ module CachedMemory (
 	// Two port SRAM controller
 	LocalMemoryInterface #(
 		.ADDRESS_SIZE(SRAM_ADDRESS_SIZE+2),
-		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE),
-		.BLOCK_ADDRESS_SIZE(0)
+		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE)
 	) localMemoryInterface (
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
@@ -238,16 +242,14 @@ module CachedMemory (
 		.secondaryDataWrite(busMemoryDataWrite),
 		.secondaryDataRead(busMemoryDataRead),
 		.secondaryBusy(busMemoryBusy),
-		.clk0(sram_clk0),
-		.csb0(sram_csb0),
-		.web0(sram_web0),
-		.wmask0(sram_wmask0),
-		.addr0(sram_addr0),
-		.din0(sram_din0),
-		.dout0(sram_dout0),
-		.clk1(sram_clk1),
-		.csb1(sram_csb1),
-		.addr1(sram_addr1),
-		.dout1(sram_dout1));
+		.sram_primarySelect(sram_primarySelect),
+		.sram_primaryWriteEnable(sram_primaryWriteEnable),
+		.sram_primaryWriteMask(sram_primaryWriteMask),
+		.sram_primaryAddress(sram_primaryAddress),
+		.sram_primaryDataWrite(sram_primaryDataWrite),
+		.sram_primaryDataRead(sram_primaryDataRead),
+		.sram_secondarySelect(sram_secondarySelect),
+		.sram_secondaryAddress(sram_secondaryAddress),
+		.sram_secondaryDataRead(sram_secondaryDataRead));
 
 endmodule

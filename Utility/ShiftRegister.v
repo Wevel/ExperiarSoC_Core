@@ -1,5 +1,8 @@
 `default_nettype none
 
+`ifndef SHIFT_REGISTER_V
+`define SHIFT_REGISTER_V
+
 module ShiftRegister #(
 		parameter WIDTH = 8
 	)(
@@ -28,7 +31,7 @@ module ShiftRegister #(
 			assign nextData = msbFirst ? { data[WIDTH-2:0], serialIn } : { serialIn, data[WIDTH-1:1] };
 		end
 	endgenerate
-	
+
 
 	always @(posedge clk) begin
 		if (rst) begin
@@ -43,8 +46,10 @@ module ShiftRegister #(
 		end else if (shiftOutEnable) outputBit <= msbFirst ? data[WIDTH-1] : data[0];
 
 	end
-		
+
 	assign parallelOut = data;
 	assign serialOut = outputBit;
 
 endmodule
+
+`endif

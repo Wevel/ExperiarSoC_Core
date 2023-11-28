@@ -86,4 +86,5 @@ module UART_rx
 
 	assign dataOut = savedData;
 	assign dataAvailable = newData;
+
 endmodule

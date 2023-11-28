@@ -104,8 +104,6 @@ module PWMDevice #(
 	wire topCompareRegisterReadDataEnable_nc;
 	reg[WIDTH-1:0] topCompare;
 	DataRegister #(.WIDTH(WIDTH), .ADDRESS(12'h004)) topCompareRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -134,8 +132,6 @@ module PWMDevice #(
 	wire dataRegisterWriteDataEnable_nc;
 	wire dataRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(WIDTH + OUTPUTS), .ADDRESS(12'h008)) dataRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -190,11 +186,11 @@ module PWMDevice #(
 
 	always @(*) begin
 		case (1'b1)
-			configurationRegisterOutputRequest: peripheralBus_dataRead <= configurationRegisterOutputData;
-			topCompareRegisterOutputRequest: peripheralBus_dataRead <= topCompareRegisterOutputData;
-			dataRegisterOutputRequest: peripheralBus_dataRead <= dataRegisterOutputData;
-			compareValuesOutputRequest: peripheralBus_dataRead <= compareValuesOutputData;
-			default: peripheralBus_dataRead <= ~32'b0;
+			configurationRegisterOutputRequest: peripheralBus_dataRead = configurationRegisterOutputData;
+			topCompareRegisterOutputRequest: peripheralBus_dataRead = topCompareRegisterOutputData;
+			dataRegisterOutputRequest: peripheralBus_dataRead = dataRegisterOutputData;
+			compareValuesOutputRequest: peripheralBus_dataRead = compareValuesOutputData;
+			default: peripheralBus_dataRead = ~32'b0;
 		endcase
 	end
 

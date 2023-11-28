@@ -1,9 +1,14 @@
 `default_nettype none
 
+`ifndef MEMORY_CACHE_V
+`define MEMORY_CACHE_V
+
+`include "MemoryPage.v"
+
 module MemoryCache #(
 		parameter ADDRESS_SIZE = 24,
 		parameter SRAM_ADDRESS_SIZE = 9,
-		parameter PAGE_INDEX_ADDRESS_SIZE = 3
+		parameter PAGE_INDEX_ADDRESS_SIZE = 4
 	)(
 		input wire clk,
 		input wire rst,
@@ -12,7 +17,7 @@ module MemoryCache #(
 		input wire writeEnable,
 		input wire automaticPaging,
 		input wire manualPageAddressSet,
-		input wire[PAGE_ADDRESS_SIZE-1:0] manualPageAddress,
+		input wire[MANUAL_PAGE_ADDRESS_SIZE-1:0] manualPageAddress,
 
 		// Bus access
 		input wire busEnable,
@@ -44,9 +49,9 @@ module MemoryCache #(
 		output wire[PAGE_COUNT-1:0] pageRequestFlush
 	);
 
-	localparam PAGE_ADDRESS_SIZE = (ADDRESS_SIZE - SRAM_ADDRESS_SIZE - 2);
+	localparam PAGE_NUMBER_ADDRESS_SIZE = (ADDRESS_SIZE - PAGE_DATA_ADDRESS_SIZE - 2);
 	localparam PAGE_DATA_ADDRESS_SIZE = (SRAM_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
-	localparam PAGE_DATA_COUNT = (1 << PAGE_DATA_ADDRESS_SIZE);
+	localparam MANUAL_PAGE_ADDRESS_SIZE = (PAGE_NUMBER_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
 	localparam PAGE_COUNT = (1 << PAGE_INDEX_ADDRESS_SIZE);
 
 	reg lastAutomaticPaging;
@@ -60,7 +65,7 @@ module MemoryCache #(
 	wire pageHit;
 	wire pageMiss;
 	wire pageAccess = (pageHit && !busBusy) || (pageMiss && qspi_changeAddress);
-	
+
 	reg[PAGE_INDEX_ADDRESS_SIZE-1:0] activePageIndex;
 	reg activePage;
 
@@ -69,7 +74,7 @@ module MemoryCache #(
 	reg loadRequested;
 
 	wire[PAGE_INDEX_ADDRESS_SIZE-1:0] evictionPageIndex;
-	
+
 	reg[PAGE_INDEX_ADDRESS_SIZE-1:0] selectedPageIndex;
 	reg pageSelected;
 	wire switchPageSelected;
@@ -91,7 +96,7 @@ module MemoryCache #(
 		.enable(pageAccess),
 		.address(activePageIndex),
 		.lruAddress(evictionPageIndex));
-	//----------------------------------------------------------------------------------------------------//		
+	//----------------------------------------------------------------------------------------------------//
 
 	wire[PAGE_COUNT-1:0] pageValid;
 	wire[PAGE_COUNT-1:0] wordReady;
@@ -167,31 +172,29 @@ module MemoryCache #(
 
 		for (generatePageValidIndex = PAGE_COUNT - 1; generatePageValidIndex >= 0; generatePageValidIndex = generatePageValidIndex - 1) begin
 			if (pageValid[generatePageValidIndex]) begin
-				activePageIndex = generatePageValidIndex;
+				activePageIndex = generatePageValidIndex[PAGE_INDEX_ADDRESS_SIZE-1:0];
 				activePage = 1'b1;
 			end
 
 			if (pageRequestFlush[generatePageValidIndex] && writeEnable) begin
-				requestPageIndex = generatePageValidIndex;
+				requestPageIndex = generatePageValidIndex[PAGE_INDEX_ADDRESS_SIZE-1:0];
 				loadRequested = 1'b0;
 				flushRequested = 1'b1;
 			end else if (pageRequestLoad[generatePageValidIndex]) begin
-				requestPageIndex = generatePageValidIndex;
+				requestPageIndex = generatePageValidIndex[PAGE_INDEX_ADDRESS_SIZE-1:0];
 				loadRequested = 1'b1;
-				flushRequested <= 1'b0;
+				flushRequested = 1'b0;
 			end
-
-			
 		end
-	
+
 		if (pageSelected && pageRequestFlush[selectedPageIndex] && writeEnable) begin
 			requestPageIndex = selectedPageIndex;
 			loadRequested = 1'b0;
-			flushRequested <= 1'b1;
+			flushRequested = 1'b1;
 		end else if (pageSelected && pageRequestLoad[selectedPageIndex]) begin
 			requestPageIndex = selectedPageIndex;
 			loadRequested = 1'b1;
-			flushRequested <= 1'b0;
+			flushRequested = 1'b0;
 		end
 	end
 
@@ -252,7 +255,7 @@ module MemoryCache #(
 	end
 
 	//assign sramReadEnable = busEnableValid && wordReady[selectedPageIndex];
-	
+
 	assign cacheSRAMEnable = (qspi_requestData || qspi_storeData) && qspi_wordComplete;
 	assign cacheSRAMWriteEnable = (qspi_requestData && !qspi_storeData) && qspi_wordComplete;
 	assign busPhysicalAddress = page_busPhysicalAddress[selectedPageIndex];
@@ -263,5 +266,7 @@ module MemoryCache #(
 	assign qspi_changeAddress = pageMoving && page_qspi_changeAddress[pageMoveIndex];
 	assign qspi_requestData = page_qspi_requestData[pageMoveIndex];
 	assign qspi_storeData = page_qspi_storeData[pageMoveIndex];
-	
+
 endmodule
+
+`endif

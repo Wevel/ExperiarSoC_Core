@@ -1,9 +1,12 @@
 `default_nettype none
 
+`ifndef MEMORY_PAGE_V
+`define MEMORY_PAGE_V
+
 module MemoryPage #(
 		parameter ADDRESS_SIZE = 24,
 		parameter SRAM_ADDRESS_SIZE = 9,
-		parameter PAGE_INDEX_ADDRESS_SIZE = 3,
+		parameter PAGE_INDEX_ADDRESS_SIZE = 4,
 		parameter INDEX = 0
 	)(
 		input wire clk,
@@ -13,7 +16,7 @@ module MemoryPage #(
 		input wire automaticPaging,
 		input wire automaticPagingChanged,
 		input wire manualPageAddressSet,
-		input wire[PAGE_ADDRESS_SIZE-1:0] manualPageAddress,
+		input wire[MANUAL_PAGE_ADDRESS_SIZE-1:0] manualPageAddress,
 		input wire pageSelected,
 		input wire pageLoading,
 		input wire pageFlushing,
@@ -46,9 +49,27 @@ module MemoryPage #(
 		output wire pageAddressSet
 	);
 
-	localparam PAGE_ADDRESS_SIZE = (ADDRESS_SIZE - SRAM_ADDRESS_SIZE - 2);
+	// Addressing using:
+	// 		ADDRESS_SIZE = 24
+	// 		SRAM_ADDRESS_SIZE = 9
+	// 		PAGE_INDEX_ADDRESS_SIZE = 4
+
+	//   -> PAGE_NUMBER_ADDRESS_SIZE = ADDRESS_SIZE - SRAM_ADDRESS_SIZE - 2 = 13
+	//   -> PAGE_DATA_ADDRESS_SIZE = SRAM_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE = 5
+
+	// Virtual address
+	//  23  22  21  20  19  18  17  16  15  14  13  12  11  10   9   8   7   6   5   4   3   2   1   0
+	// [                               page                               ][       data       ][ byte ]
+
+	// Physical cache address
+	//  10   9   8   7   6   5   4   3   2   1   0
+	// [    index     ][       data       ][ byte ]
+
+
+	localparam PAGE_NUMBER_ADDRESS_SIZE = (ADDRESS_SIZE - PAGE_DATA_ADDRESS_SIZE - 2);
 	localparam PAGE_DATA_ADDRESS_SIZE = (SRAM_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
-	localparam PAGE_DATA_COUNT = (1 << PAGE_DATA_ADDRESS_SIZE);
+	localparam PAGE_DATA_COUNTER_ADDRESS_SIZE = (PAGE_DATA_ADDRESS_SIZE + 1);
+	localparam MANUAL_PAGE_ADDRESS_SIZE = (PAGE_NUMBER_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
 
 	localparam STATE_EMPTY = 2'b00;
 	localparam STATE_LOADING = 2'b01;
@@ -62,34 +83,35 @@ module MemoryPage #(
 
 	wire[PAGE_INDEX_ADDRESS_SIZE-1:0] pageIndex = INDEX;
 
+	reg[PAGE_NUMBER_ADDRESS_SIZE-1:0] currentPageAddress;
+
 	reg[ADDRESS_SIZE-1:0] loadAddress;
-	reg[ADDRESS_SIZE-PAGE_DATA_ADDRESS_SIZE-2-1:0] currentPageAddress;
 	wire [ADDRESS_SIZE-1:0] nextLoadAddress = loadAddress + 4;
 
-	reg[PAGE_DATA_ADDRESS_SIZE:0] cachedCount;
-	wire[PAGE_DATA_ADDRESS_SIZE:0] nextCachedCount = cachedCount + 1;
-	wire[PAGE_DATA_ADDRESS_SIZE:0] cachedCountFinal = 1 << PAGE_DATA_ADDRESS_SIZE;
+	reg[PAGE_DATA_COUNTER_ADDRESS_SIZE-1:0] cachedCount;
+	wire[PAGE_DATA_COUNTER_ADDRESS_SIZE-1:0] nextCachedCount = cachedCount + 1;
+	wire[PAGE_DATA_COUNTER_ADDRESS_SIZE-1:0] cachedCountFinal = 1 << PAGE_DATA_ADDRESS_SIZE;
 
-	wire[ADDRESS_SIZE-PAGE_DATA_ADDRESS_SIZE-2-1:0] targetPageAddress = busVirtualAddress[ADDRESS_SIZE-1:PAGE_DATA_ADDRESS_SIZE+2];
-	wire[PAGE_DATA_ADDRESS_SIZE-1:0] targetSubPageAddress = busVirtualAddress[PAGE_DATA_ADDRESS_SIZE+1:2];
+	wire[PAGE_NUMBER_ADDRESS_SIZE-1:0] targetPageAddress = busVirtualAddress[PAGE_NUMBER_ADDRESS_SIZE+PAGE_DATA_ADDRESS_SIZE+2-1:PAGE_DATA_ADDRESS_SIZE+2];
+	wire[PAGE_DATA_COUNTER_ADDRESS_SIZE-1:0] targetSubPageAddress = { 1'b0, busVirtualAddress[PAGE_DATA_ADDRESS_SIZE+1:2] };
 
 	always @(*) begin
-		if (automaticPaging) pageValid <= pageAddressSet && (targetPageAddress == currentPageAddress);
-		else pageValid <= pageAddressSet && (targetPageAddress[PAGE_INDEX_ADDRESS_SIZE-1:0] == currentPageAddress[PAGE_INDEX_ADDRESS_SIZE-1:0]);
+		if (automaticPaging) pageValid = pageAddressSet && (targetPageAddress == currentPageAddress);
+		else pageValid = pageAddressSet && (targetPageAddress[PAGE_INDEX_ADDRESS_SIZE-1:0] == currentPageAddress[PAGE_INDEX_ADDRESS_SIZE-1:0]);
 	end
 
-	wire invalidPage = busEnable && automaticPaging && !pageValid;
+	wire invalidPage = busEnable && ~|busVirtualAddress[1:0] && automaticPaging && !pageValid;
 
 	assign wordReady = qspi_enable && qspi_initialised && pageValid && pageSelected && (targetSubPageAddress < cachedCount) && (state != STATE_FLUSHING) && !invalidPage && !pendingAddressChange;
 
-	reg[ADDRESS_SIZE-1:0] currentPageAddressLoadAddress;
+	reg[PAGE_NUMBER_ADDRESS_SIZE-1:0] currentPageAddressLoadAddress;
 	reg requireAddressChange;
 	always @(*) begin
-		currentPageAddressLoadAddress = {ADDRESS_SIZE{1'b0}};
+		currentPageAddressLoadAddress = {PAGE_NUMBER_ADDRESS_SIZE{1'b0}};
 		requireAddressChange = 1'b0;
 
 		if (automaticPaging) begin
-			if (busEnable && invalidPage && pageSelected) begin
+			if (busEnable && ~|busVirtualAddress[1:0] && invalidPage && pageSelected) begin
 				currentPageAddressLoadAddress = targetPageAddress;
 				requireAddressChange = 1'b1;
 			end
@@ -127,7 +149,7 @@ module MemoryPage #(
 			state <= STATE_EMPTY;
 			dataDirty <= 1'b0;
 			loadAddress <= 24'b0;
-			cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
+			cachedCount <= {PAGE_DATA_COUNTER_ADDRESS_SIZE{1'b0}};
 			pendingLoad <= 1'b0;
 			pendingLoadAddress <= 24'b0;
 		end else begin
@@ -142,7 +164,7 @@ module MemoryPage #(
 						state <= STATE_LOADING;
 						dataDirty <= 1'b0;
 						loadAddress <= qspi_address;
-						cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
+						cachedCount <= {PAGE_DATA_COUNTER_ADDRESS_SIZE{1'b0}};
 					end
 				end
 
@@ -159,19 +181,19 @@ module MemoryPage #(
 						end
 					end
 
-					if (busEnable && busWriteEnable) dataDirty <= 1'b1;
+					if (busEnable && ~|busVirtualAddress[1:0] && busWriteEnable) dataDirty <= 1'b1;
 				end
 
 				STATE_LOADED: begin
 					if (automaticPagingChanged) begin
-						if (writeEnable && dataDirty) begin 
+						if (writeEnable && dataDirty) begin
 							state <= STATE_FLUSHING;
 							pendingLoad <= 1'b0;
 						end else begin
 							state <= STATE_EMPTY;
 						end
 					end else if (requireAddressChange) begin
-						if (writeEnable && dataDirty) begin 
+						if (writeEnable && dataDirty) begin
 							state <= STATE_FLUSHING;
 							pendingLoad <= 1'b1;
 							pendingLoadAddress <= qspi_address;
@@ -184,10 +206,10 @@ module MemoryPage #(
 							state <= STATE_LOADING;
 							dataDirty <= 1'b0;
 							loadAddress <= qspi_address;
-							cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
+							cachedCount <= {PAGE_DATA_COUNTER_ADDRESS_SIZE{1'b0}};
 						end
 					end else begin
-						if (busEnable && busWriteEnable) dataDirty <= 1'b1;
+						if (busEnable && ~|busVirtualAddress[1:0] && busWriteEnable) dataDirty <= 1'b1;
 					end
 				end
 
@@ -200,7 +222,7 @@ module MemoryPage #(
 									dataDirty <= 1'b0;
 									pendingLoad <= 1'b0;
 									loadAddress <= pendingLoadAddress;
-									cachedCount <= {SRAM_ADDRESS_SIZE{1'b0}};
+									cachedCount <= {PAGE_DATA_COUNTER_ADDRESS_SIZE{1'b0}};
 								end else begin
 									state <= STATE_EMPTY;
 									cachedCount <= nextCachedCount;
@@ -224,7 +246,7 @@ module MemoryPage #(
 
 	always @(posedge clk) begin
 		if (rst) begin
-			currentPageAddress <= {ADDRESS_SIZE{1'b0}};
+			currentPageAddress <= {PAGE_NUMBER_ADDRESS_SIZE{1'b0}};
 			pendingAddressChange <= 1'b0;
 		end else if (qspi_changeAddress) begin
 			pendingAddressChange <= 1'b0;
@@ -241,3 +263,5 @@ module MemoryPage #(
 
 
 endmodule
+
+`endif

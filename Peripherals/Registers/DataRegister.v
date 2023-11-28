@@ -1,12 +1,12 @@
 `default_nettype none
 
+`ifndef DATA_REGISTER_V
+`define DATA_REGISTER_V
+
 module DataRegister #(
 		parameter WIDTH = 32,
 		parameter ADDRESS = 12'b0
 	)(
-		input wire clk,
-		input wire rst,
-
 		// Peripheral Bus
 		input wire enable,
 		input wire peripheralBus_we,
@@ -25,7 +25,7 @@ module DataRegister #(
 		output wire readData_en,
 		input wire readData_busy
 	);
-	
+
 	wire[31:0] dataMask = {
 		peripheralBus_byteSelect[3] ? 8'hFF : 8'h00,
 		peripheralBus_byteSelect[2] ? 8'hFF : 8'h00,
@@ -33,12 +33,16 @@ module DataRegister #(
 		peripheralBus_byteSelect[0] ? 8'hFF : 8'h00
 	};
 
-	wire registerSelect = enable && ({ peripheralBus_address[11:2], 2'b00 } == ADDRESS);
+	wire registerSelect = enable && (peripheralBus_address == ADDRESS);
 	wire we = registerSelect && peripheralBus_we && !peripheralBus_oe;
 	wire oe = registerSelect && peripheralBus_oe && !peripheralBus_we;
 
 	assign writeData = we ? peripheralBus_dataWrite[WIDTH-1:0] : {WIDTH{1'b0}};
 	assign writeData_en = we;
+
+	generate
+		if (WIDTH < 32) wire _unused_peripheralBus_dataWrite = &{ 1'b0, peripheralBus_dataWrite[31:WIDTH], 1'b0 };
+	endgenerate
 
 	wire[31:0] baseReadData;
 	generate
@@ -56,3 +60,5 @@ module DataRegister #(
 	assign readData_en = oe;
 
 endmodule
+
+`endif

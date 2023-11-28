@@ -95,23 +95,23 @@ module PipeStore (
 		if (loadSigned) begin
 			if (loadStoreByte) begin
 				case (targetMemoryAddress[1:0])
-					2'b00: signExtend <= memoryDataRead[7];
-					2'b01: signExtend <= memoryDataRead[15];
-					2'b10: signExtend <= memoryDataRead[23];
-					2'b11: signExtend <= memoryDataRead[31];
+					2'b00: signExtend = memoryDataRead[7];
+					2'b01: signExtend = memoryDataRead[15];
+					2'b10: signExtend = memoryDataRead[23];
+					2'b11: signExtend = memoryDataRead[31];
 				endcase
 			end else if (loadStoreHalf) begin
 				case (targetMemoryAddress[1:0])
-					2'b00: signExtend <= memoryDataRead[15];
-					2'b01: signExtend <= memoryDataRead[23];
-					2'b10: signExtend <= memoryDataRead[31];
-					2'b11: signExtend <= 1'b0;
+					2'b00: signExtend = memoryDataRead[15];
+					2'b01: signExtend = memoryDataRead[23];
+					2'b10: signExtend = memoryDataRead[31];
+					2'b11: signExtend = 1'b0;
 				endcase
 			end else begin
-				signExtend <= 1'b0;
+				signExtend = 1'b0;
 			end
 		end else begin
-			signExtend <= 1'b0;
+			signExtend = 1'b0;
 		end
 	end
 
@@ -161,14 +161,14 @@ module PipeStore (
 	reg[31:0] integerRegisterWriteData;
 	always @(*) begin
 		case (1'b1)
-			isLUI			   : integerRegisterWriteData <= aluResultData;
-			isAUIPC			   : integerRegisterWriteData <= aluResultData;
-			isJAL			   : integerRegisterWriteData <= aluResultData;
-			isJALR	   		   : integerRegisterWriteData <= aluResultData;
-			shouldLoad  	   : integerRegisterWriteData <= dataIn;
-			(isALU || isALUImm): integerRegisterWriteData <= aluResultData;
-			csrWrite   		   : integerRegisterWriteData <= csrData;
-			default: integerRegisterWriteData <= 32'b0;
+			isLUI			   : integerRegisterWriteData = aluResultData;
+			isAUIPC			   : integerRegisterWriteData = aluResultData;
+			isJAL			   : integerRegisterWriteData = aluResultData;
+			isJALR	   		   : integerRegisterWriteData = aluResultData;
+			shouldLoad  	   : integerRegisterWriteData = dataIn;
+			(isALU || isALUImm): integerRegisterWriteData = aluResultData;
+			csrWrite   		   : integerRegisterWriteData = csrData;
+			default: integerRegisterWriteData = 32'b0;
 		endcase
 	end
 

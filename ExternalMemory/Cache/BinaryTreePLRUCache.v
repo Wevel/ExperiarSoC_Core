@@ -12,15 +12,16 @@ module BinaryTreePLRUCache #(
 	);
 
 	localparam PARENT_SIZE = (SIZE - 1);
+	localparam STATE_SIZE = (1 << PARENT_SIZE);
 
-	reg[(1 << PARENT_SIZE)-1:0] state;
+	reg[STATE_SIZE-1:0] state;
 
 generate
 	if (SIZE > 1) begin
 
 		always @(posedge clk) begin
 			if (rst) begin
-				state <= {SIZE{1'b0}};
+				state <= {STATE_SIZE{1'b0}};
 			end else if (enable) begin
 				state[address[SIZE-1:1]] <= !address[0];
 			end

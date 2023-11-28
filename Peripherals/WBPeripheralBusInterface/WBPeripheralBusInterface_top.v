@@ -29,16 +29,15 @@ module WBPeripheralBusInterface (
 		input wire[31:0] peripheralBus_dataRead,
 		output wire[31:0] peripheralBus_dataWrite
 	);
-	
+
 	localparam STATE_IDLE  		  = 2'h0;
 	localparam STATE_WRITE_SINGLE = 2'h1;
 	localparam STATE_READ_SINGLE  = 2'h2;
 	localparam STATE_FINISH 	  = 2'h3;
-	
+
 	reg[1:0] state = STATE_IDLE;
 	reg[23:0] currentAddress;
 	reg[3:0] currentByteSelect;
-	reg[31:0] currentDataIn;
 
 	reg stall = 1'b0;
 	reg acknowledge = 1'b0;
@@ -61,7 +60,6 @@ module WBPeripheralBusInterface (
 						if (wb_stb_i) begin
 							currentAddress <= wb_adr_i;
 							currentByteSelect <= wb_sel_i;
-							currentDataIn <= wb_data_i;
 							stall <= 1'b1;
 
 							if (wb_we_i) begin

@@ -25,7 +25,7 @@ module JTAG (
 
 		output wire[4:0] probe_jtagInstruction
 	);
-	
+
 	wire[31:0] idcode = { versionID, partID, manufacturerID, 1'b1 };
 
 	// TAP states
@@ -53,7 +53,7 @@ module JTAG (
 	localparam INSTRUCTION_USERCODE = 5'b00011;
 	localparam INSTRUCTION_IDCODE 	= 5'b00100;
 	localparam INSTRUCTION_BYPASS 	= 5'b11111;
-	
+
 	reg tckState = 1'b0;
 	reg tckRisingEdge = 1'b0;
 	reg tckFallingEdge = 1'b0;
@@ -153,8 +153,8 @@ module JTAG (
 		.serialIn(jtag_tdi),
 		.serialOut(drIDDataOut));
 
-	wire drDataOut = drBSRSelect 	? drBSRDataOut : 
-					 drBypassSelect ? drBypassDataOut : 
+	wire drDataOut = drBSRSelect 	? drBSRDataOut :
+					 drBypassSelect ? drBypassDataOut :
 					 drIDSelect 	? drIDDataOut :
 					 				  1'b0;
 
@@ -220,13 +220,13 @@ module JTAG (
 			case (managementState)
 				MANAGEMENT_STATE_IDLE: begin
 					managementReadData <= 32'b0;
-					
+
 					if (bsrWriteEnable) begin
 						if (!managementCommandByteSelect) begin
 							managementAddress <= bsrDataRead[19:0];
 							managementByteSelect <= managementCommandByteSelect;
 
-							if (managementCommandWriteEnable) managementState <= MANAGEMENT_STATE_GET_DATA; 
+							if (managementCommandWriteEnable) managementState <= MANAGEMENT_STATE_GET_DATA;
 							if (managementCommandReadEnable) managementState <= MANAGEMENT_STATE_READ;
 						end
 					end
@@ -244,13 +244,13 @@ module JTAG (
 				MANAGEMENT_STATE_GET_DATA: begin
 					if (bsrWriteEnable) begin
 						managementWriteData <= bsrDataRead;
-						managementState <= MANAGEMENT_STATE_WRITE; 
+						managementState <= MANAGEMENT_STATE_WRITE;
 					end
 				end
 
 				MANAGEMENT_STATE_WRITE: begin
 					managementState <= MANAGEMENT_STATE_IDLE;
-				end				
+				end
 
 				default: begin
 					managementState <= MANAGEMENT_STATE_IDLE;

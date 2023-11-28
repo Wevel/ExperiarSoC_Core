@@ -81,8 +81,6 @@ module GPIODevice #(
 	wire inputRegisterWriteDataEnable_nc;
 	wire inputRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(IO_COUNT), .ADDRESS(12'h020)) inputRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),

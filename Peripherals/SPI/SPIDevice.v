@@ -84,8 +84,6 @@ module SPIDevice #(
 	wire statusRegisterReadDataEnable_nc;
 	wire statusRegisterBusBusy_nc;
 	DataRegister #(.WIDTH(1), .ADDRESS(12'h004)) statusRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -111,8 +109,6 @@ module SPIDevice #(
 	wire dataRegisterBusBusy;
 	wire dataRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(8), .ADDRESS(12'h008)) dataRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -164,96 +160,96 @@ module SPIDevice #(
 
 	always @(posedge clk) begin
 		if (rst) begin
-			state <= STATE_IDLE;
-			bitCounter <= 3'b0;
-			clockCounter <= {CLOCK_WIDTH{1'b0}};
-			spiClockRise <= 1'b0;
-			spiClockFall <= 1'b0;
-			spiClock <= 1'b0;
+			state = STATE_IDLE;
+			bitCounter = 3'b0;
+			clockCounter = {CLOCK_WIDTH{1'b0}};
+			spiClockRise = 1'b0;
+			spiClockFall = 1'b0;
+			spiClock = 1'b0;
 		end else begin
 			case (state)
 				STATE_IDLE: begin
-					bitCounter <= 3'b0;
-					clockCounter <= {CLOCK_WIDTH{1'b0}};
-					spiClockRise <= 1'b0;
-					spiClockFall <= 1'b0;
-					spiClock <= 1'b0;
+					bitCounter = 3'b0;
+					clockCounter = {CLOCK_WIDTH{1'b0}};
+					spiClockRise = 1'b0;
+					spiClockFall = 1'b0;
+					spiClock = 1'b0;
 
 					if (dataRegisterWriteDataEnable && peripheralBus_byteSelect[0]) begin 
-						state <= STATE_SETUP;
+						state = STATE_SETUP;
 					end
 				end
 
 				STATE_SETUP: begin
-					clockCounter <= nextClockCounter;
+					clockCounter = nextClockCounter;
 
 					if (halfClockCounterMatch) begin
-						bitCounter <= 1'b0;
-						spiClock <= 1'b1;
-						state <= STATE_SHIFT;
+						bitCounter = 1'b0;
+						spiClock = 1'b1;
+						state = STATE_SHIFT;
 
 						if (spiClockPolarity) begin
-							spiClockRise <= 1'b0;
-							spiClockFall <= 1'b1;
+							spiClockRise = 1'b0;
+							spiClockFall = 1'b1;
 						end else begin
-							spiClockRise <= 1'b1;
-							spiClockFall <= 1'b0;
+							spiClockRise = 1'b1;
+							spiClockFall = 1'b0;
 						end	
 					end					
 				end
 
 				STATE_SHIFT: begin
 					if (clockCounterMatch) begin
-						clockCounter <= {CLOCK_WIDTH{1'b0}};
-						spiClock <= 1'b0;
+						clockCounter = {CLOCK_WIDTH{1'b0}};
+						spiClock = 1'b0;
 
 						if (spiClockPolarity) begin
-							spiClockRise <= 1'b1;
-							spiClockFall <= 1'b0;
+							spiClockRise = 1'b1;
+							spiClockFall = 1'b0;
 						end else begin
-							spiClockRise <= 1'b0;
-							spiClockFall <= 1'b1;
+							spiClockRise = 1'b0;
+							spiClockFall = 1'b1;
 						end
 
 						if (bitCounter == 3'h7) begin
-							state <= STATE_END;
+							state = STATE_END;
 						end	else begin
-							bitCounter <= nextBitCounter;
+							bitCounter = nextBitCounter;
 						end
 					end else if (halfClockCounterMatch) begin
 						if (spiClockPolarity) begin
-							spiClockRise <= 1'b0;
-							spiClockFall <= 1'b1;
+							spiClockRise = 1'b0;
+							spiClockFall = 1'b1;
 						end else begin
-							spiClockRise <= 1'b1;
-							spiClockFall <= 1'b0;
+							spiClockRise = 1'b1;
+							spiClockFall = 1'b0;
 						end	
 
-						spiClock <= 1'b1;
-						clockCounter <= nextClockCounter;
+						spiClock = 1'b1;
+						clockCounter = nextClockCounter;
 					end else begin
-						spiClockRise <= 1'b0;
-						spiClockFall <= 1'b0;
-						clockCounter <= nextClockCounter;
+						spiClockRise = 1'b0;
+						spiClockFall = 1'b0;
+						clockCounter = nextClockCounter;
 					end
 				end
 
 				STATE_END: begin
-					spiClockRise <= 1'b0;
-					spiClockFall <= 1'b0;
-					spiClock <= 1'b0;
+					spiClockRise = 1'b0;
+					spiClockFall = 1'b0;
+					spiClock = 1'b0;
 					
-					if (clockCounterMatch) state <= STATE_IDLE;
-					else clockCounter <= nextClockCounter;
+					if (clockCounterMatch) state = STATE_IDLE;
+					else clockCounter = nextClockCounter;
 				end
 
 				default: begin
-					state <= STATE_IDLE;
-					bitCounter <= 3'b0;
-					clockCounter <= {CLOCK_WIDTH{1'b0}};
-					spiClockRise <= 1'b0;
-					spiClockFall <= 1'b0;
-					spiClock <= 1'b0;
+					state = STATE_IDLE;
+					bitCounter = 3'b0;
+					clockCounter = {CLOCK_WIDTH{1'b0}};
+					spiClockRise = 1'b0;
+					spiClockFall = 1'b0;
+					spiClock = 1'b0;
 				end
 			endcase
 		end
@@ -269,10 +265,10 @@ module SPIDevice #(
 
 	always @(*) begin
 		case (1'b1)
-			configurationRegisterOutputRequest: peripheralBus_dataRead <= configurationRegisterOutputData;
-			statusRegisterOutputRequest: peripheralBus_dataRead <= statusRegisterOutputData;
-			dataRegisterOutputRequest: peripheralBus_dataRead <= dataRegisterOutputData;
-			default: peripheralBus_dataRead <=  ~32'b0;
+			configurationRegisterOutputRequest: peripheralBus_dataRead = configurationRegisterOutputData;
+			statusRegisterOutputRequest: peripheralBus_dataRead = statusRegisterOutputData;
+			dataRegisterOutputRequest: peripheralBus_dataRead = dataRegisterOutputData;
+			default: peripheralBus_dataRead =  ~32'b0;
 		endcase
 	end
 

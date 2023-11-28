@@ -76,4 +76,5 @@ module AsyncRAM
 	always @(posedge rclk) begin
 		read_data <= mem[raddr];           // read memory
 	end  
+	
 endmodule

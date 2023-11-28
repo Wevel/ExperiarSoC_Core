@@ -99,11 +99,11 @@ module PipeOperation (
 	reg[31:0] inputB;
 	always @(*) begin
 		case (1'b1)
-			isAUIPC : inputB <= imm_U;
-			isALUImm: inputB <= imm_I;
-			isLoad 	: inputB <= imm_I;
-			isStore : inputB <= imm_S;
-			default: inputB <= rs2Data;
+			isAUIPC : inputB = imm_U;
+			isALUImm: inputB = imm_I;
+			isLoad 	: inputB = imm_I;
+			isStore : inputB = imm_S;
+			default: inputB = rs2Data;
 		endcase
 	end
 
@@ -120,15 +120,15 @@ module PipeOperation (
 	always @(*) begin
 		if (isBranch) begin
 			case (funct3)
-				/*BEQ*/  3'b000: takeBranch <= aluAEqualsB;
-				/*BNE*/  3'b001: takeBranch <= !aluAEqualsB;
-				//*None*/ 3'b010: takeBranch <= 1'b0;
-				//*None*/ 3'b011: takeBranch <= 1'b0;
-				/*BLT*/  3'b100: takeBranch <= aluALessThanB;
-				/*BGE*/  3'b101: takeBranch <= !aluALessThanB;
-				/*BLTU*/ 3'b110: takeBranch <= aluALessThanBUnsigned;
-				/*BGEU*/ 3'b111: takeBranch <= !aluALessThanBUnsigned;
-						default: takeBranch <= 1'b0;
+				/*BEQ*/  3'b000: takeBranch = aluAEqualsB;
+				/*BNE*/  3'b001: takeBranch = !aluAEqualsB;
+				//*None*/ 3'b010: takeBranch = 1'b0;
+				//*None*/ 3'b011: takeBranch = 1'b0;
+				/*BLT*/  3'b100: takeBranch = aluALessThanB;
+				/*BGE*/  3'b101: takeBranch = !aluALessThanB;
+				/*BLTU*/ 3'b110: takeBranch = aluALessThanBUnsigned;
+				/*BGEU*/ 3'b111: takeBranch = !aluALessThanBUnsigned;
+						default: takeBranch = 1'b0;
 			endcase
 		end else begin
 			takeBranch <= 1'b0;
@@ -140,20 +140,20 @@ module PipeOperation (
 	reg[31:0] nextProgramCounterBase;
 	always @(*) begin
 		case (1'b1)
-			isJAL 	   : nextProgramCounterBase <= programCounter;
-			isJALR     : nextProgramCounterBase <= rs1Data;
-			takeBranch : nextProgramCounterBase <= programCounter;
-			default    : nextProgramCounterBase <= programCounterLink;
+			isJAL 	   : nextProgramCounterBase = programCounter;
+			isJALR     : nextProgramCounterBase = rs1Data;
+			takeBranch : nextProgramCounterBase = programCounter;
+			default    : nextProgramCounterBase = programCounterLink;
 		endcase
 	end
 
 	reg[31:0] nextProgramCounterOffset;
 	always @(*) begin
 		case (1'b1)
-			isJAL 	   : nextProgramCounterOffset <= imm_J;
-			isJALR     : nextProgramCounterOffset <= imm_I;
-			takeBranch : nextProgramCounterOffset <= imm_B;
-			default    : nextProgramCounterOffset <= 32'b0;
+			isJAL 	   : nextProgramCounterOffset = imm_J;
+			isJALR     : nextProgramCounterOffset = imm_I;
+			takeBranch : nextProgramCounterOffset = imm_B;
+			default    : nextProgramCounterOffset = 32'b0;
 		endcase
 	end
 
@@ -188,15 +188,15 @@ module PipeOperation (
 	reg[31:0] aluValue;
 	always @(*) begin
 		case (funct3)
-			/*ADD*/  3'b000: aluValue <= aluAlt ? aluAMinusB : aluAPlusB;
-			/*SLL*/  3'b001: aluValue <= leftShift;
-			/*SLT*/  3'b010: aluValue <= {31'b0, aluALessThanB};
-			/*SLTU*/ 3'b011: aluValue <= {31'b0, aluALessThanBUnsigned};
-			/*XOR*/  3'b100: aluValue <= inputA ^ inputB;
-			/*SRL*/  3'b101: aluValue <= rightShift;
-			/*OR*/   3'b110: aluValue <= inputA | inputB;
-			/*AND*/  3'b111: aluValue <= inputA & inputB;
-					default: aluValue <= 32'b0;
+			/*ADD*/  3'b000: aluValue = aluAlt ? aluAMinusB : aluAPlusB;
+			/*SLL*/  3'b001: aluValue = leftShift;
+			/*SLT*/  3'b010: aluValue = {31'b0, aluALessThanB};
+			/*SLTU*/ 3'b011: aluValue = {31'b0, aluALessThanBUnsigned};
+			/*XOR*/  3'b100: aluValue = inputA ^ inputB;
+			/*SRL*/  3'b101: aluValue = rightShift;
+			/*OR*/   3'b110: aluValue = inputA | inputB;
+			/*AND*/  3'b111: aluValue = inputA & inputB;
+					default: aluValue = 32'b0;
 		endcase
 	end
 
@@ -220,14 +220,14 @@ module PipeOperation (
 	reg[31:0] currentData;
 	always @(*) begin
 		case (1'b1)
-			isLUI			   : currentData <= imm_U;
-			isAUIPC			   : currentData <= aluAPlusB;
-			isJAL			   : currentData <= programCounterLink;
-			isJALR	   		   : currentData <= programCounterLink;
-			(isALU || isALUImm): currentData <= aluValue;
-			isLoad 			   : currentData <= aluAPlusB;
-			csrRead	   		   : currentData <= csrWriteData;
-			default: currentData <= 32'b0;
+			isLUI			   : currentData = imm_U;
+			isAUIPC			   : currentData = aluAPlusB;
+			isJAL			   : currentData = programCounterLink;
+			isJALR	   		   : currentData = programCounterLink;
+			(isALU || isALUImm): currentData = aluValue;
+			isLoad 			   : currentData = aluAPlusB;
+			csrRead	   		   : currentData = csrWriteData;
+			default: currentData = 32'b0;
 		endcase
 	end
 

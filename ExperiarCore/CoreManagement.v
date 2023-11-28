@@ -73,8 +73,6 @@ module CoreManagement (
 	wire controlRegisterBusy_nc;
 	wire controlRegisterReadDataEnable_nc;
 	DataRegister #(.WIDTH(4), .ADDRESS(12'h000)) controlRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(registerEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),

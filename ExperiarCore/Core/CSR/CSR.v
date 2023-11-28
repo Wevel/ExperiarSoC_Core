@@ -214,23 +214,23 @@ module CSR (
 	always @(*) begin
 		case (1'b1)
 			// Timers
-			cycleTimerRequestOutput: csrReadData <= cycleTimerReadData;
-			timeTimerRequestOutputLower: csrReadData <= timeTimerReadDataLower;
-			timeTimerRequestOutputUpper: csrReadData <= timeTimerReadDataUpper;
-			instretTimerRequestOutput: csrReadData <= instretTimerReadData;
+			cycleTimerRequestOutput: csrReadData = cycleTimerReadData;
+			timeTimerRequestOutputLower: csrReadData = timeTimerReadDataLower;
+			timeTimerRequestOutputUpper: csrReadData = timeTimerReadDataUpper;
+			instretTimerRequestOutput: csrReadData = instretTimerReadData;
 			
 			// Machine info
-			vendorIDRequestOutput: csrReadData <= vendorIDReadData;
-			archIDRequestOutput: csrReadData <= archIDReadData;
-			implIDRequestOutput: csrReadData <= implIDReadData;
-			coreIDRequestOutput: csrReadData <= coreIDReadData;
-			configPointerRequestOutput: csrReadData <= configPointerReadData;
-			misaRequestOutput: csrReadData <= misaReadData;
+			vendorIDRequestOutput: csrReadData = vendorIDReadData;
+			archIDRequestOutput: csrReadData = archIDReadData;
+			implIDRequestOutput: csrReadData = implIDReadData;
+			coreIDRequestOutput: csrReadData = coreIDReadData;
+			configPointerRequestOutput: csrReadData = configPointerReadData;
+			misaRequestOutput: csrReadData = misaReadData;
 
 			// Traps
-			trapsRequestOutput: csrReadData <= trapsReadData;
+			trapsRequestOutput: csrReadData = trapsReadData;
 
-			default: csrReadData <= 32'b0;
+			default: csrReadData = 32'b0;
 		endcase
 	end
 

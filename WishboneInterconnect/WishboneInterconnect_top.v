@@ -615,52 +615,52 @@ module WishboneInterconnect (
 	always @(*) begin
 		case (1'b1)
 			master0_slave_select[0]: begin
-				master0_wb_ack_i <= master0_slave0_wb_ack_i;
-				master0_wb_stall_i <= master0_slave0_wb_stall_i;
-				master0_wb_error_i <= master0_slave0_wb_error_i;
-				master0_wb_data_i <= master0_slave0_wb_data_i;
+				master0_wb_ack_i = master0_slave0_wb_ack_i;
+				master0_wb_stall_i = master0_slave0_wb_stall_i;
+				master0_wb_error_i = master0_slave0_wb_error_i;
+				master0_wb_data_i = master0_slave0_wb_data_i;
 			end
 			
 			master0_slave_select[1]: begin
-				master0_wb_ack_i <= master0_slave1_wb_ack_i;
-				master0_wb_stall_i <= master0_slave1_wb_stall_i;
-				master0_wb_error_i <= master0_slave1_wb_error_i;
-				master0_wb_data_i <= master0_slave1_wb_data_i;
+				master0_wb_ack_i = master0_slave1_wb_ack_i;
+				master0_wb_stall_i = master0_slave1_wb_stall_i;
+				master0_wb_error_i = master0_slave1_wb_error_i;
+				master0_wb_data_i = master0_slave1_wb_data_i;
 			end
 			
 			master0_slave_select[2]: begin
-				master0_wb_ack_i <= master0_slave2_wb_ack_i;
-				master0_wb_stall_i <= master0_slave2_wb_stall_i;
-				master0_wb_error_i <= master0_slave2_wb_error_i;
-				master0_wb_data_i <= master0_slave2_wb_data_i;
+				master0_wb_ack_i = master0_slave2_wb_ack_i;
+				master0_wb_stall_i = master0_slave2_wb_stall_i;
+				master0_wb_error_i = master0_slave2_wb_error_i;
+				master0_wb_data_i = master0_slave2_wb_data_i;
 			end
 			
 			master0_slave_select[3]: begin
-				master0_wb_ack_i <= master0_slave3_wb_ack_i;
-				master0_wb_stall_i <= master0_slave3_wb_stall_i;
-				master0_wb_error_i <= master0_slave3_wb_error_i;
-				master0_wb_data_i <= master0_slave3_wb_data_i;
+				master0_wb_ack_i = master0_slave3_wb_ack_i;
+				master0_wb_stall_i = master0_slave3_wb_stall_i;
+				master0_wb_error_i = master0_slave3_wb_error_i;
+				master0_wb_data_i = master0_slave3_wb_data_i;
 			end
 			
 			master0_slave_select[4]: begin
-				master0_wb_ack_i <= master0_slave4_wb_ack_i;
-				master0_wb_stall_i <= master0_slave4_wb_stall_i;
-				master0_wb_error_i <= master0_slave4_wb_error_i;
-				master0_wb_data_i <= master0_slave4_wb_data_i;
+				master0_wb_ack_i = master0_slave4_wb_ack_i;
+				master0_wb_stall_i = master0_slave4_wb_stall_i;
+				master0_wb_error_i = master0_slave4_wb_error_i;
+				master0_wb_data_i = master0_slave4_wb_data_i;
 			end
 
 			master0_slave_select[5]: begin
-				master0_wb_ack_i <= master0_slave5_wb_ack_i;
-				master0_wb_stall_i <= master0_slave5_wb_stall_i;
-				master0_wb_error_i <= master0_slave5_wb_error_i;
-				master0_wb_data_i <= master0_slave5_wb_data_i;
+				master0_wb_ack_i = master0_slave5_wb_ack_i;
+				master0_wb_stall_i = master0_slave5_wb_stall_i;
+				master0_wb_error_i = master0_slave5_wb_error_i;
+				master0_wb_data_i = master0_slave5_wb_data_i;
 			end
 			
 			default: begin
-				master0_wb_ack_i <= master0_wb_cyc_o;
-				master0_wb_stall_i <= 1'b0;
-				master0_wb_error_i <= 1'b0;
-				master0_wb_data_i <= ~32'b0;
+				master0_wb_ack_i = master0_wb_cyc_o;
+				master0_wb_stall_i = 1'b0;
+				master0_wb_error_i = 1'b0;
+				master0_wb_data_i = ~32'b0;
 			end
 			
 		endcase
@@ -670,52 +670,52 @@ module WishboneInterconnect (
 	always @(*) begin
 		case (1'b1)
 			master1_slave_select[0]: begin
-				master1_wb_ack_i <= master1_slave0_wb_ack_i;
-				master1_wb_stall_i <= master1_slave0_wb_stall_i;
-				master1_wb_error_i <= master1_slave0_wb_error_i;
-				master1_wb_data_i <= master1_slave0_wb_data_i;
+				master1_wb_ack_i = master1_slave0_wb_ack_i;
+				master1_wb_stall_i = master1_slave0_wb_stall_i;
+				master1_wb_error_i = master1_slave0_wb_error_i;
+				master1_wb_data_i = master1_slave0_wb_data_i;
 			end
 			
 			master1_slave_select[1]: begin
-				master1_wb_ack_i <= master1_slave1_wb_ack_i;
-				master1_wb_stall_i <= master1_slave1_wb_stall_i;
-				master1_wb_error_i <= master1_slave1_wb_error_i;
-				master1_wb_data_i <= master1_slave1_wb_data_i;
+				master1_wb_ack_i = master1_slave1_wb_ack_i;
+				master1_wb_stall_i = master1_slave1_wb_stall_i;
+				master1_wb_error_i = master1_slave1_wb_error_i;
+				master1_wb_data_i = master1_slave1_wb_data_i;
 			end
 			
 			master1_slave_select[2]: begin
-				master1_wb_ack_i <= master1_slave2_wb_ack_i;
-				master1_wb_stall_i <= master1_slave2_wb_stall_i;
-				master1_wb_error_i <= master1_slave2_wb_error_i;
-				master1_wb_data_i <= master1_slave2_wb_data_i;
+				master1_wb_ack_i = master1_slave2_wb_ack_i;
+				master1_wb_stall_i = master1_slave2_wb_stall_i;
+				master1_wb_error_i = master1_slave2_wb_error_i;
+				master1_wb_data_i = master1_slave2_wb_data_i;
 			end
 			
 			master1_slave_select[3]: begin
-				master1_wb_ack_i <= master1_slave3_wb_ack_i;
-				master1_wb_stall_i <= master1_slave3_wb_stall_i;
-				master1_wb_error_i <= master1_slave3_wb_error_i;
-				master1_wb_data_i <= master1_slave3_wb_data_i;
+				master1_wb_ack_i = master1_slave3_wb_ack_i;
+				master1_wb_stall_i = master1_slave3_wb_stall_i;
+				master1_wb_error_i = master1_slave3_wb_error_i;
+				master1_wb_data_i = master1_slave3_wb_data_i;
 			end
 			
 			master1_slave_select[4]: begin
-				master1_wb_ack_i <= master1_slave4_wb_ack_i;
-				master1_wb_stall_i <= master1_slave4_wb_stall_i;
-				master1_wb_error_i <= master1_slave4_wb_error_i;
-				master1_wb_data_i <= master1_slave4_wb_data_i;
+				master1_wb_ack_i = master1_slave4_wb_ack_i;
+				master1_wb_stall_i = master1_slave4_wb_stall_i;
+				master1_wb_error_i = master1_slave4_wb_error_i;
+				master1_wb_data_i = master1_slave4_wb_data_i;
 			end
 
 			master1_slave_select[5]: begin
-				master1_wb_ack_i <= master1_slave5_wb_ack_i;
-				master1_wb_stall_i <= master1_slave5_wb_stall_i;
-				master1_wb_error_i <= master1_slave5_wb_error_i;
-				master1_wb_data_i <= master1_slave5_wb_data_i;
+				master1_wb_ack_i = master1_slave5_wb_ack_i;
+				master1_wb_stall_i = master1_slave5_wb_stall_i;
+				master1_wb_error_i = master1_slave5_wb_error_i;
+				master1_wb_data_i = master1_slave5_wb_data_i;
 			end
 			
 			default: begin
-				master1_wb_ack_i <= master1_wb_cyc_o;
-				master1_wb_stall_i <= 1'b0;
-				master1_wb_error_i <= 1'b0;
-				master1_wb_data_i <= ~32'b0;
+				master1_wb_ack_i = master1_wb_cyc_o;
+				master1_wb_stall_i = 1'b0;
+				master1_wb_error_i = 1'b0;
+				master1_wb_data_i = ~32'b0;
 			end
 			
 		endcase
@@ -725,52 +725,52 @@ module WishboneInterconnect (
 	always @(*) begin
 		case (1'b1)
 			master2_slave_select[0]: begin
-				master2_wb_ack_i <= master2_slave0_wb_ack_i;
-				master2_wb_stall_i <= master2_slave0_wb_stall_i;
-				master2_wb_error_i <= master2_slave0_wb_error_i;
-				master2_wb_data_i <= master2_slave0_wb_data_i;
+				master2_wb_ack_i = master2_slave0_wb_ack_i;
+				master2_wb_stall_i = master2_slave0_wb_stall_i;
+				master2_wb_error_i = master2_slave0_wb_error_i;
+				master2_wb_data_i = master2_slave0_wb_data_i;
 			end
 			
 			master2_slave_select[1]: begin
-				master2_wb_ack_i <= master2_slave1_wb_ack_i;
-				master2_wb_stall_i <= master2_slave1_wb_stall_i;
-				master2_wb_error_i <= master2_slave1_wb_error_i;
-				master2_wb_data_i <= master2_slave1_wb_data_i;
+				master2_wb_ack_i = master2_slave1_wb_ack_i;
+				master2_wb_stall_i = master2_slave1_wb_stall_i;
+				master2_wb_error_i = master2_slave1_wb_error_i;
+				master2_wb_data_i = master2_slave1_wb_data_i;
 			end
 			
 			master2_slave_select[2]: begin
-				master2_wb_ack_i <= master2_slave2_wb_ack_i;
-				master2_wb_stall_i <= master2_slave2_wb_stall_i;
-				master2_wb_error_i <= master2_slave2_wb_error_i;
-				master2_wb_data_i <= master2_slave2_wb_data_i;
+				master2_wb_ack_i = master2_slave2_wb_ack_i;
+				master2_wb_stall_i = master2_slave2_wb_stall_i;
+				master2_wb_error_i = master2_slave2_wb_error_i;
+				master2_wb_data_i = master2_slave2_wb_data_i;
 			end
 			
 			master2_slave_select[3]: begin
-				master2_wb_ack_i <= master2_slave3_wb_ack_i;
-				master2_wb_stall_i <= master2_slave3_wb_stall_i;
-				master2_wb_error_i <= master2_slave3_wb_error_i;
-				master2_wb_data_i <= master2_slave3_wb_data_i;
+				master2_wb_ack_i = master2_slave3_wb_ack_i;
+				master2_wb_stall_i = master2_slave3_wb_stall_i;
+				master2_wb_error_i = master2_slave3_wb_error_i;
+				master2_wb_data_i = master2_slave3_wb_data_i;
 			end
 			
 			master2_slave_select[4]: begin
-				master2_wb_ack_i <= master2_slave4_wb_ack_i;
-				master2_wb_stall_i <= master2_slave4_wb_stall_i;
-				master2_wb_error_i <= master2_slave4_wb_error_i;
-				master2_wb_data_i <= master2_slave4_wb_data_i;
+				master2_wb_ack_i = master2_slave4_wb_ack_i;
+				master2_wb_stall_i = master2_slave4_wb_stall_i;
+				master2_wb_error_i = master2_slave4_wb_error_i;
+				master2_wb_data_i = master2_slave4_wb_data_i;
 			end
 
 			master2_slave_select[5]: begin
-				master2_wb_ack_i <= master2_slave5_wb_ack_i;
-				master2_wb_stall_i <= master2_slave5_wb_stall_i;
-				master2_wb_error_i <= master2_slave5_wb_error_i;
-				master2_wb_data_i <= master2_slave5_wb_data_i;
+				master2_wb_ack_i = master2_slave5_wb_ack_i;
+				master2_wb_stall_i = master2_slave5_wb_stall_i;
+				master2_wb_error_i = master2_slave5_wb_error_i;
+				master2_wb_data_i = master2_slave5_wb_data_i;
 			end
 			
 			default: begin
-				master2_wb_ack_i <= master2_wb_cyc_o;
-				master2_wb_stall_i <= 1'b0;
-				master2_wb_error_i <= 1'b0;
-				master2_wb_data_i <= ~32'b0;
+				master2_wb_ack_i = master2_wb_cyc_o;
+				master2_wb_stall_i = 1'b0;
+				master2_wb_error_i = 1'b0;
+				master2_wb_data_i = ~32'b0;
 			end
 			
 		endcase
@@ -780,52 +780,52 @@ module WishboneInterconnect (
 	always @(*) begin
 		case (1'b1)
 			master3_slave_select[0]: begin
-				master3_wb_ack_i <= master3_slave0_wb_ack_i;
-				master3_wb_stall_i <= master3_slave0_wb_stall_i;
-				master3_wb_error_i <= master3_slave0_wb_error_i;
-				master3_wb_data_i <= master3_slave0_wb_data_i;
+				master3_wb_ack_i = master3_slave0_wb_ack_i;
+				master3_wb_stall_i = master3_slave0_wb_stall_i;
+				master3_wb_error_i = master3_slave0_wb_error_i;
+				master3_wb_data_i = master3_slave0_wb_data_i;
 			end
 			
 			master3_slave_select[1]: begin
-				master3_wb_ack_i <= master3_slave1_wb_ack_i;
-				master3_wb_stall_i <= master3_slave1_wb_stall_i;
-				master3_wb_error_i <= master3_slave1_wb_error_i;
-				master3_wb_data_i <= master3_slave1_wb_data_i;
+				master3_wb_ack_i = master3_slave1_wb_ack_i;
+				master3_wb_stall_i = master3_slave1_wb_stall_i;
+				master3_wb_error_i = master3_slave1_wb_error_i;
+				master3_wb_data_i = master3_slave1_wb_data_i;
 			end
 			
 			master3_slave_select[2]: begin
-				master3_wb_ack_i <= master3_slave2_wb_ack_i;
-				master3_wb_stall_i <= master3_slave2_wb_stall_i;
-				master3_wb_error_i <= master3_slave2_wb_error_i;
-				master3_wb_data_i <= master3_slave2_wb_data_i;
+				master3_wb_ack_i = master3_slave2_wb_ack_i;
+				master3_wb_stall_i = master3_slave2_wb_stall_i;
+				master3_wb_error_i = master3_slave2_wb_error_i;
+				master3_wb_data_i = master3_slave2_wb_data_i;
 			end
 			
 			master3_slave_select[3]: begin
-				master3_wb_ack_i <= master3_slave3_wb_ack_i;
-				master3_wb_stall_i <= master3_slave3_wb_stall_i;
-				master3_wb_error_i <= master3_slave3_wb_error_i;
-				master3_wb_data_i <= master3_slave3_wb_data_i;
+				master3_wb_ack_i = master3_slave3_wb_ack_i;
+				master3_wb_stall_i = master3_slave3_wb_stall_i;
+				master3_wb_error_i = master3_slave3_wb_error_i;
+				master3_wb_data_i = master3_slave3_wb_data_i;
 			end
 			
 			master3_slave_select[4]: begin
-				master3_wb_ack_i <= master3_slave4_wb_ack_i;
-				master3_wb_stall_i <= master3_slave4_wb_stall_i;
-				master3_wb_error_i <= master3_slave4_wb_error_i;
-				master3_wb_data_i <= master3_slave4_wb_data_i;
+				master3_wb_ack_i = master3_slave4_wb_ack_i;
+				master3_wb_stall_i = master3_slave4_wb_stall_i;
+				master3_wb_error_i = master3_slave4_wb_error_i;
+				master3_wb_data_i = master3_slave4_wb_data_i;
 			end
 
 			master3_slave_select[5]: begin
-				master3_wb_ack_i <= master3_slave5_wb_ack_i;
-				master3_wb_stall_i <= master3_slave5_wb_stall_i;
-				master3_wb_error_i <= master3_slave5_wb_error_i;
-				master3_wb_data_i <= master3_slave5_wb_data_i;
+				master3_wb_ack_i = master3_slave5_wb_ack_i;
+				master3_wb_stall_i = master3_slave5_wb_stall_i;
+				master3_wb_error_i = master3_slave5_wb_error_i;
+				master3_wb_data_i = master3_slave5_wb_data_i;
 			end
 			
 			default: begin
-				master3_wb_ack_i <= master3_wb_cyc_o;
-				master3_wb_stall_i <= 1'b0;
-				master3_wb_error_i <= 1'b0;
-				master3_wb_data_i <= ~32'b0;
+				master3_wb_ack_i = master3_wb_cyc_o;
+				master3_wb_stall_i = 1'b0;
+				master3_wb_error_i = 1'b0;
+				master3_wb_data_i = ~32'b0;
 			end
 			
 		endcase

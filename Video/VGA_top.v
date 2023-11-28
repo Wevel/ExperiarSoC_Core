@@ -234,8 +234,6 @@ module VGA #(
 	wire[4:0] stateRegisterWriteData_nc;
 	wire stateRegisterWriteDataEnable_nc;
 	DataRegister #(.WIDTH(5), .ADDRESS(12'h030)) stateRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(configEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -272,26 +270,27 @@ module VGA #(
 	always @(*) begin
 		case (1'b1)
 			configurationRegisterOutputRequest:
-				peripheralBus_dataRead <= configurationRegisterOutputData;
+				peripheralBus_dataRead = configurationRegisterOutputData;
 			horizontalVisibleAreaCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= horizontalVisibleAreaCompareRegisterOutputData;
+				peripheralBus_dataRead = horizontalVisibleAreaCompareRegisterOutputData;
 			horizontalFrontPorchCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= horizontalFrontPorchCompareRegisterOutputData;
+				peripheralBus_dataRead = horizontalFrontPorchCompareRegisterOutputData;
 			horizontalSyncPulseCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= horizontalSyncPulseCompareRegisterOutputData;
+				peripheralBus_dataRead = horizontalSyncPulseCompareRegisterOutputData;
 			horizontalWholeLineCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= horizontalWholeLineCompareRegisterOutputData;
+				peripheralBus_dataRead = horizontalWholeLineCompareRegisterOutputData;
 			verticalVisibleAreaCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= verticalVisibleAreaCompareRegisterOutputData;
+				peripheralBus_dataRead = verticalVisibleAreaCompareRegisterOutputData;
 			verticalFrontPorchCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= verticalFrontPorchCompareRegisterOutputData;
+				peripheralBus_dataRead = verticalFrontPorchCompareRegisterOutputData;
 			verticalSyncPulseCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= verticalSyncPulseCompareRegisterOutputData;
+				peripheralBus_dataRead = verticalSyncPulseCompareRegisterOutputData;
 			verticalWholeLineCompareRegisterOutputRequest:
-				peripheralBus_dataRead <= verticalWholeLineCompareRegisterOutputData;
+				peripheralBus_dataRead = verticalWholeLineCompareRegisterOutputData;
 			stateRegisterOutputRequest:
-				peripheralBus_dataRead <= stateRegisterOutputData;
-			default: peripheralBus_dataRead <= ~32'b0;
+				peripheralBus_dataRead = stateRegisterOutputData;
+			default:
+				peripheralBus_dataRead = ~32'b0;
 		endcase
 	end
 
@@ -469,8 +468,8 @@ module VGA #(
 
 	always @(*) begin
 		if (rst || !enableOutput) begin
-			vga_address <= {ADDRESS_BITS{1'b0}};
-			fetchPixelData <= 1'b0;
+			vga_address = {ADDRESS_BITS{1'b0}};
+			fetchPixelData = 1'b0;
 		end else begin
 			// Use data register inputs for new address
 			// This means that the address gets updated at the same time as the pixel counters
@@ -480,23 +479,23 @@ module VGA #(
 				// Use Seperate horizontal and vertical portions of address
 				// This means that for some resolutions portions of memory are not used by the video device
 				DRAW_MODE_RAW: begin
-					vga_address <= { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
-					fetchPixelData <= raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
+					vga_address = { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
+					fetchPixelData = raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
 				end
 
 				// Directly use the pixel index to access memory
 				// This better uses memory, but is also slightly more complex for the cpu to write to the frame buffer
 				DRAW_MODE_RAW_TIGHT_MEM: begin
-					vga_address <= { raw_directPixelCounter[ADDRESS_BITS-1:0], 2'b00 };
-					fetchPixelData <= raw_directPixelCounterChanged;
+					vga_address = { raw_directPixelCounter[ADDRESS_BITS-1:0], 2'b00 };
+					fetchPixelData = raw_directPixelCounterChanged;
 				end
 
 				// TODO: Use some portion of memory to store colours, then index them with the frame buffer
 				// This will require loading the pixel information ahead of time, so that the correct colour can be found
 				// Is this really helpful, as we use 6-bit colour, so probably need to use 4-bit colour palette index
 				DRAW_MODE_COLOUR_PALETTE: begin
-					vga_address <= { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
-					fetchPixelData <= raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
+					vga_address = { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
+					fetchPixelData = raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
 				end
 
 				// TODO: Use some portion of memory to store sprites
@@ -506,13 +505,13 @@ module VGA #(
 				// How configurable should this be
 				// We have very little video memory, so this may not work very well at all
 				DRAW_MODE_SPRITES: begin
-					vga_address <= { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
-					fetchPixelData <= raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
+					vga_address = { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
+					fetchPixelData = raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
 				end
 
 				default: begin
-					vga_address <= { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
-					fetchPixelData <= raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
+					vga_address = { raw_verticalPixelCounter_d[VERTICAL_BITS-1:0], raw_horizontalPixelCounter_d[HORIZONTAL_BITS-1:0], 2'b00 };
+					fetchPixelData = raw_verticalPixelCounterChanged || raw_horizontalPixelCounterChanged;
 				end
 			endcase
 		end
@@ -521,12 +520,12 @@ module VGA #(
 	reg[5:0] raw_currentPixel;	
 	always @(*) begin
 		case (raw_subPixelCounter_buffered)
-			4'h0: raw_currentPixel <= currentPixelData[5:0];
-			4'h1: raw_currentPixel <= currentPixelData[11:6];
-			4'h2: raw_currentPixel <= currentPixelData[17:12];
-			4'h3: raw_currentPixel <= currentPixelData[23:18];
-			4'h4: raw_currentPixel <= currentPixelData[29:24];
-			default: raw_currentPixel <= currentPixelData[5:0];
+			4'h0: raw_currentPixel = currentPixelData[5:0];
+			4'h1: raw_currentPixel = currentPixelData[11:6];
+			4'h2: raw_currentPixel = currentPixelData[17:12];
+			4'h3: raw_currentPixel = currentPixelData[23:18];
+			4'h4: raw_currentPixel = currentPixelData[29:24];
+			default: raw_currentPixel = currentPixelData[5:0];
 		endcase
 	end
 

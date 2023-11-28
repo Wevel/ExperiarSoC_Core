@@ -1,5 +1,8 @@
 `default_nettype none
 
+`ifndef FIFO_V
+`define FIFO_V
+
 module FIFO
 	#(
 		parameter WORD_SIZE = 8,
@@ -12,7 +15,7 @@ module FIFO
 
 		output wire [WORD_SIZE-1:0] dataOut,
 		input wire oe,
-		
+
 		output wire isData,
 		output wire bufferFull,
 		output wire dataLost
@@ -67,7 +70,7 @@ module FIFO
 			if (we_buffered) begin
 				// TODO: Should we allow the buffer to overwrite itself when a write occurs and it is already full
 				if (!bufferFull) begin
-					buffer[endPointer] <= dataIn_buffered;					
+					buffer[endPointer] <= dataIn_buffered;
 					endPointer <= nextEndPointer;
 					lastWriteLostData <= 1'b0;
 
@@ -83,6 +86,8 @@ module FIFO
 
 	assign isData = startPointer != endPointer;
 	assign bufferFull = nextEndPointer == startPointer;
-	assign dataLost = lastWriteLostData;	
+	assign dataLost = lastWriteLostData;
 
 endmodule
+
+`endif

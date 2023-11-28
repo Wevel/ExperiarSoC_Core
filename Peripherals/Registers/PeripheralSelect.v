@@ -1,5 +1,8 @@
 `default_nettype none
 
+`ifndef PERIPHERAL_SELECT_V
+`define PERIPHERAL_SELECT_V
+
 module PeripheralSelect #(
 		parameter ID = 8'h00
 	)(
@@ -12,3 +15,5 @@ module PeripheralSelect #(
 	assign localAddress = peripheralBus_address[15:0];
 
 endmodule
+
+`endif

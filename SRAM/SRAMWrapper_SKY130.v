@@ -2,11 +2,11 @@
 
 module SRAMWrapper_SKY130 #(
 		parameter BYTE_COUNT = 4,
-		parameter ADDRESS_SIZE = 9,
+		parameter ADDRESS_SIZE = 9
 	)(
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
 		input wire clk,
@@ -17,8 +17,8 @@ module SRAMWrapper_SKY130 #(
 		input wire primaryWriteEnable,
 		input wire[BYTE_COUNT-1:0] primaryWriteMask,
 		input wire[ADDRESS_SIZE-1:0] primaryAddress,
-		input wire[WORD_SIZE-1:0] primaryDataIn,
-		output wire[WORD_SIZE-1:0] primaryDataRead
+		input wire[WORD_SIZE-1:0] primaryDataWrite,
+		output wire[WORD_SIZE-1:0] primaryDataRead,
 
 		// Secondary R port
 		input wire secondarySelect,
@@ -30,30 +30,30 @@ module SRAMWrapper_SKY130 #(
 
 generate
 
-	if BYTE_COUNT == 4 begin
+	if (BYTE_COUNT == 4) begin
 
-		if ADDRESS_SIZE == 9 begin
+		if (ADDRESS_SIZE == 9) begin
 			
 			// Only one SRAM is needed for this configuration
 			sky130_sram_2kbyte_1rw1r_32x512_8 sram(
 	`ifdef USE_POWER_PINS
-				.vccd1(vccd1),	// User area 1 1.8V power
-				.vssd1(vssd1),	// User area 1 digital ground
+				.vccd1(VPWR),	// User area 1 1.8V power
+				.vssd1(VGND),	// User area 1 digital ground
 	`endif
 				.clk0(clk),
 				.csb0(~primarySelect),
 				.web0(~primaryWriteEnable),
 				.wmask0(primaryWriteMask),
-				.addr0(videoSRAMRight_addr0),
+				.addr0(primaryAddress),
 				.din0(primaryDataWrite),
 				.dout0(primaryDataRead),
 				.clk1(clk),
 				.csb1(~secondarySelect),
-				.addr1(videoSRAMRight_addr1),
+				.addr1(secondaryAddress),
 				.dout1(secondaryDataRead)
 			);
 
-		end else if ADDRESS_SIZE > 9 begin
+		end else if (ADDRESS_SIZE > 9) begin
 			
 			// Recursively instantiate SRAMWrappers to create a memory with the desired address size
 			wire[(2*WORD_SIZE)-1:0] primaryDataReadFull;
@@ -64,8 +64,8 @@ generate
 				.ADDRESS_SIZE(ADDRESS_SIZE-1)
 			) sramWrapperHigh (
 `ifdef USE_POWER_PINS
-				.vccd1(vccd1),	// User area 1 1.8V supply
-				.vssd1(vssd1),	// User area 1 digital ground
+				.VPWR(VPWR),
+				.VGND(VGND),
 `endif
 				.clk(clk),
 				.rst(rst),
@@ -74,7 +74,7 @@ generate
 				.primaryWriteMask(primaryWriteMask),
 				.primaryAddress(primaryAddress[ADDRESS_SIZE-2:0]),
 				.primaryDataWrite(primaryDataWrite),
-				.primaryDataRead(primaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE])
+				.primaryDataRead(primaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE]),
 				.secondarySelect(secondarySelect && secondaryAddress[ADDRESS_SIZE-1]), // MSB of secondary address
 				.secondaryAddress(secondaryAddress[ADDRESS_SIZE-2:0]),
 				.secondaryDataRead(secondaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE]));
@@ -84,8 +84,8 @@ generate
 				.ADDRESS_SIZE(ADDRESS_SIZE-1)
 			) sramWrapperLow (
 `ifdef USE_POWER_PINS
-				.vccd1(vccd1),	// User area 1 1.8V supply
-				.vssd1(vssd1),	// User area 1 digital ground
+				.VPWR(VPWR),
+				.VGND(VGND),
 `endif
 				.clk(clk),
 				.rst(rst),
@@ -94,7 +94,7 @@ generate
 				.primaryWriteMask(primaryWriteMask),
 				.primaryAddress(primaryAddress[ADDRESS_SIZE-2:0]),
 				.primaryDataWrite(primaryDataWrite),
-				.primaryDataRead(primaryDataReadFull[WORD_SIZE-1:0])
+				.primaryDataRead(primaryDataReadFull[WORD_SIZE-1:0]),
 				.secondarySelect(secondarySelect && !secondaryAddress[ADDRESS_SIZE-1]), // MSB of secondary address
 				.secondaryAddress(secondaryAddress[ADDRESS_SIZE-2:0]),
 				.secondaryDataRead(secondaryDataReadFull[WORD_SIZE-1:0]));
@@ -102,12 +102,12 @@ generate
 				assign primaryDataRead = primaryAddress[ADDRESS_SIZE-1] ? primaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE] : primaryDataReadFull[WORD_SIZE-1:0];
 				assign secondaryDataRead = secondaryAddress[ADDRESS_SIZE-1] ? secondaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE] : secondaryDataReadFull[WORD_SIZE-1:0];
 
-		end else $display("Unsupported ADDRESS_SIZE", ADDRESS_SIZE);
+		end else begin
+			$display("Unsupported ADDRESS_SIZE", ADDRESS_SIZE);
+		end
 		
 	end else $display("Unsupported BYTE_COUNT", BYTE_COUNT);
 
 endgenerate
 
 endmodule
-
-			

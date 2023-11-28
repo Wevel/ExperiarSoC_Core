@@ -1,9 +1,12 @@
 `default_nettype none
 
+`ifndef COUNTER_V
+`define COUNTER_V
+
 module Counter #(
 		parameter WIDTH = 8, 	// Width of the output
 		parameter DIV = 0, 		// number of bits to use as divisor
-		parameter TOP = 0, 		// max value, 0 = none		
+		parameter TOP = 0, 		// max value, 0 = none
 		parameter UP = 1 		// direction to count, use 1 for up and 0 for down
 	)(
 		input wire clk,
@@ -11,10 +14,10 @@ module Counter #(
 		input wire halt,
 		output reg [WIDTH-1:0] value
 	);
-  
+
 	reg [WIDTH + DIV - 1:0] counter = 'b0;
 
-	always @(posedge clk) begin		
+	always @(posedge clk) begin
 		if (TOP != 'b0) begin
 			if (rst || (counter[WIDTH + DIV - 1:DIV] == TOP)) counter = 'b0;
 			else begin
@@ -33,8 +36,10 @@ module Counter #(
 				end
 			end
 		end
-		
+
 		value = counter[WIDTH + DIV - 1:DIV];
 	end
 
 endmodule
+
+`endif

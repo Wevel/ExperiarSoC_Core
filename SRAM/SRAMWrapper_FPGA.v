@@ -2,13 +2,8 @@
 
 module SRAMWrapper_FPGA #(
 		parameter BYTE_COUNT = 4,
-		parameter ADDRESS_SIZE = 9,
+		parameter ADDRESS_SIZE = 9
 	)(
-`ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
-`endif
-
 		input wire clk,
 		input wire rst,
 
@@ -18,7 +13,7 @@ module SRAMWrapper_FPGA #(
 		input wire[BYTE_COUNT-1:0] primaryWriteMask,
 		input wire[ADDRESS_SIZE-1:0] primaryAddress,
 		input wire[WORD_SIZE-1:0] primaryDataWrite,
-		reg wire[WORD_SIZE-1:0] primaryDataRead
+		reg wire[WORD_SIZE-1:0] primaryDataRead,
 
 		// Secondary R port
 		input wire secondarySelect,
@@ -70,7 +65,7 @@ module SRAMWrapper_FPGA #(
 
 	// Read from memory
 	always @ (negedge clk) begin
-		if (primarySelect_reg && !primaryWriteEnable_reg) primaryDataRead <= mem[addr0_reg];
+		if (primarySelect_reg && !primaryWriteEnable_reg) primaryDataRead <= mem[primaryAddress_reg];
 		if (secondarySelect_reg) secondaryDataRead <= mem[secondaryAddress_reg];
 	end
 

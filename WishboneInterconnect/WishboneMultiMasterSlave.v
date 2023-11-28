@@ -130,4 +130,5 @@ module WishboneMultiMasterSlave (
 
 	// Assign logic probes
 	assign probe_currentMaster = currentMaster;
+
 endmodule

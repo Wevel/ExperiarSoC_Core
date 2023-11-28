@@ -1,6 +1,13 @@
 `default_nettype none
 
+`ifndef CACHE_MANAGEMENT_V
+`define CACHE_MANAGEMENT_V
+
+`include "../../Peripherals/Registers/ConfigurationRegister.v"
+`include "../../Peripherals/Registers/DataRegister.v"
+
 module CacheManagement #(
+		parameter ADDRESS_SIZE = 24,
 		parameter SRAM_ADDRESS_SIZE = 9,
 		parameter PAGE_INDEX_ADDRESS_SIZE = 3
 	)(
@@ -24,15 +31,14 @@ module CacheManagement #(
 		output wire[31:0] busMemoryDataWrite,
 		input wire[31:0] busMemoryDataRead,
 		input wire busMemoryBusy,
-		
+
 		// Configuration
 		output wire cacheEnable,
 		output wire automaticPaging,
 		output wire manualPageAddressSet,
-		output wire[23-SRAM_ADDRESS_SIZE-2:0] manualPageAddress,
+		output wire[MANUAL_PAGE_ADDRESS_SIZE-1:0] manualPageAddress,
 		output wire writeEnable,
 		output wire[3:0] clockScale,
-		output wire modeChanged,
 
 		// Status
 		input wire cacheInitialised,
@@ -40,12 +46,14 @@ module CacheManagement #(
 		input wire cacheStoreData,
 		input wire cacheBusy,
 		input wire[PAGE_COUNT-1:0] pageAddressSet,
-		input wire[PAGE_COUNT-1:0] pageRequestLoad
+		input wire[PAGE_COUNT-1:0] pageRequestLoad,
+		input wire[PAGE_COUNT-1:0] pageRequestFlush
 	);
 
+	localparam PAGE_NUMBER_ADDRESS_SIZE = (ADDRESS_SIZE - PAGE_DATA_ADDRESS_SIZE - 2);
 	localparam PAGE_DATA_ADDRESS_SIZE = (SRAM_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
+	localparam MANUAL_PAGE_ADDRESS_SIZE = (PAGE_NUMBER_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
 	localparam PAGE_COUNT = (1 << PAGE_INDEX_ADDRESS_SIZE);
-
 
 	wire sramEnable = peripheralBus_oe && (peripheralBus_address[23] == 1'b0) && ((peripheralBus_address[22:SRAM_ADDRESS_SIZE+2] == {(21-SRAM_ADDRESS_SIZE){1'b0}}) || automaticPaging);
 	wire registersEnable = peripheralBus_address[23:12] == 12'h800;
@@ -89,9 +97,8 @@ module CacheManagement #(
 	wire[2:0] statusRegisterWriteData_nc;
 	wire statusRegisterWriteDataEnable_nc;
 	wire statusRegisterReadDataEnable_nc;
+	wire _unused_statusRegister = &{ 1'b0, statusRegisterBusBusy_nc, statusRegisterWriteData_nc, statusRegisterWriteDataEnable_nc, statusRegisterReadDataEnable_nc, 1'b0 };
 	DataRegister #(.WIDTH(3), .ADDRESS(12'h004)) statusRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -108,17 +115,17 @@ module CacheManagement #(
 		.readData_en(statusRegisterReadDataEnable_nc),
 		.readData_busy(1'b0));
 
+
 	// Current page address 	 Default 0x0
-	reg[23:0] currentManualPageAddress;
+	reg[MANUAL_PAGE_ADDRESS_SIZE-1:0] currentManualPageAddress;
 	wire[31:0] currentPageAddressRegisterOutputData;
 	wire currentPageAddressRegisterOutputRequest;
 	wire currentPageAddressRegisterBusBusy;
-	wire[23:0] currentPageAddressRegisterWriteData;
+	wire[MANUAL_PAGE_ADDRESS_SIZE-1:0] currentPageAddressRegisterWriteData;
 	wire currentPageAddressRegisterWriteDataEnable;
 	wire currentPageAddressRegisterReadDataEnable_nc;
-	DataRegister #(.WIDTH(24), .ADDRESS(12'h008)) currentPageAddressRegister(
-		.clk(clk),
-		.rst(rst),
+	wire _unused_currentPageAddressRegister = &{ 1'b0, currentPageAddressRegisterReadDataEnable_nc, 1'b0 };
+	DataRegister #(.WIDTH(MANUAL_PAGE_ADDRESS_SIZE), .ADDRESS(12'h008)) currentPageAddressRegister(
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -135,20 +142,18 @@ module CacheManagement #(
 		.readData_en(currentPageAddressRegisterReadDataEnable_nc),
 		.readData_busy(1'b0));
 
-	wire[23:0] nextManualPageAddress = {currentPageAddressRegisterWriteData[23-SRAM_ADDRESS_SIZE-2:0], {(SRAM_ADDRESS_SIZE){1'b0}}, 2'b00};
-	
 	always @(posedge clk) begin
 		if (rst) begin
-			currentManualPageAddress <= 24'b0;
+			currentManualPageAddress <= ~{MANUAL_PAGE_ADDRESS_SIZE{1'b0}};
 		end else begin
-			if (automaticPaging) currentManualPageAddress <= ~24'b0;
-			else if (currentPageAddressRegisterWriteDataEnable) currentManualPageAddress <= nextManualPageAddress;
+			if (automaticPaging) currentManualPageAddress <= ~{MANUAL_PAGE_ADDRESS_SIZE{1'b0}};
+			else if (currentPageAddressRegisterWriteDataEnable) currentManualPageAddress <= currentPageAddressRegisterWriteData;
 		end
 	end
 
 	assign manualPageAddressSet  = currentPageAddressRegisterWriteDataEnable && !automaticPaging;
 	assign manualPageAddress  = currentPageAddressRegisterWriteData[23-SRAM_ADDRESS_SIZE-2:0];
-	
+
 	// Cache status register
 	// PAGE_INDEX_ADDRESS_SIZE == 3:
 	// 	b00-b07: pageAddressSet
@@ -162,9 +167,8 @@ module CacheManagement #(
 	wire[PAGE_COUNT+PAGE_COUNT-1:0] cacheStatusRegisterWriteData_nc;
 	wire cacheStatusRegisterWriteDataEnable_nc;
 	wire cacheStatusRegisterReadDataEnable_nc;
+	wire _unused_cacheStatusRegister = &{ 1'b0, cacheStatusRegisterBusBusy_nc, cacheStatusRegisterWriteData_nc, cacheStatusRegisterWriteDataEnable_nc, cacheStatusRegisterReadDataEnable_nc, 1'b0 };
 	DataRegister #(.WIDTH(PAGE_COUNT + PAGE_COUNT), .ADDRESS(12'h00C)) cacheStatusRegister(
-		.clk(clk),
-		.rst(rst),
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
@@ -181,15 +185,45 @@ module CacheManagement #(
 		.readData_en(cacheStatusRegisterReadDataEnable_nc),
 		.readData_busy(1'b0));
 
+	// Cache status register 2
+	// PAGE_INDEX_ADDRESS_SIZE == 3:
+	// 	b00-b07: pageRequestFlush
+	// PAGE_INDEX_ADDRESS_SIZE == 4:
+	// 	b00-b15: pageRequestFlush
+	wire[31:0] cacheStatusRegister2OutputData;
+	wire cacheStatusRegister2OutputRequest;
+	wire cacheStatusRegister2BusBusy_nc;
+	wire[PAGE_COUNT-1:0] cacheStatusRegister2WriteData_nc;
+	wire cacheStatusRegister2WriteDataEnable_nc;
+	wire cacheStatusRegister2ReadDataEnable_nc;
+	wire _unused_cacheStatusRegister2 = &{ 1'b0, cacheStatusRegister2BusBusy_nc, cacheStatusRegister2WriteData_nc, cacheStatusRegister2WriteDataEnable_nc, cacheStatusRegister2ReadDataEnable_nc, 1'b0 };
+	DataRegister #(.WIDTH(PAGE_COUNT), .ADDRESS(12'h010)) cacheStatusRegister2(
+		.enable(registersEnable),
+		.peripheralBus_we(peripheralBus_we),
+		.peripheralBus_oe(peripheralBus_oe),
+		.peripheralBus_busy(cacheStatusRegister2BusBusy_nc),
+		.peripheralBus_address(localAddress),
+		.peripheralBus_byteSelect(peripheralBus_byteSelect),
+		.peripheralBus_dataWrite(peripheralBus_dataWrite),
+		.peripheralBus_dataRead(cacheStatusRegister2OutputData),
+		.requestOutput(cacheStatusRegister2OutputRequest),
+		.writeData(cacheStatusRegister2WriteData_nc),
+		.writeData_en(cacheStatusRegister2WriteDataEnable_nc),
+		.writeData_busy(1'b0),
+		.readData({ pageRequestFlush }),
+		.readData_en(cacheStatusRegister2ReadDataEnable_nc),
+		.readData_busy(1'b0));
+
 	// Assign peripheral read
 	always @(*) begin
 		case (1'b1)
-			configurationRegisterOutputRequest: peripheralBus_dataRead <= configurationRegisterOutputData;
-			statusRegisterOutputRequest: peripheralBus_dataRead <= statusRegisterOutputData;
-			currentPageAddressRegisterOutputRequest: peripheralBus_dataRead <= currentPageAddressRegisterOutputData;
-			cacheStatusRegisterOutputRequest: peripheralBus_dataRead <= cacheStatusRegisterOutputData;
-			sramEnable: peripheralBus_dataRead <= busMemoryDataRead;
-			default: peripheralBus_dataRead <= ~32'b0;
+			configurationRegisterOutputRequest: peripheralBus_dataRead = configurationRegisterOutputData;
+			statusRegisterOutputRequest: peripheralBus_dataRead = statusRegisterOutputData;
+			currentPageAddressRegisterOutputRequest: peripheralBus_dataRead = currentPageAddressRegisterOutputData;
+			cacheStatusRegisterOutputRequest: peripheralBus_dataRead = cacheStatusRegisterOutputData;
+			cacheStatusRegister2OutputRequest: peripheralBus_dataRead = cacheStatusRegister2OutputData;
+			sramEnable: peripheralBus_dataRead = busMemoryDataRead;
+			default: peripheralBus_dataRead = ~32'b0;
 		endcase
 	end
 
@@ -202,3 +236,5 @@ module CacheManagement #(
 	assign busMemoryDataWrite = peripheralBus_dataWrite;
 
 endmodule
+
+`endif

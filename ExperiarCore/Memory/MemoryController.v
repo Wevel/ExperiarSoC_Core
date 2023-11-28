@@ -53,30 +53,30 @@ module MemoryController (
 	reg[1:0] localMemory_source = SOURCE_NONE;
 	always @(posedge clk) begin
 		if (rst) begin
-			localMemory_source <= SOURCE_NONE;
+			localMemory_source = SOURCE_NONE;
 		end else begin
 			case (localMemory_source)
 				SOURCE_NONE: begin
-					if (instruction_enableLocalMemoryRequest) localMemory_source <= SOURCE_INSTRUCTION;
-					else if (data_enableLocalMemoryRequest) localMemory_source <= SOURCE_DATA;
+					if (instruction_enableLocalMemoryRequest) localMemory_source = SOURCE_INSTRUCTION;
+					else if (data_enableLocalMemoryRequest) localMemory_source = SOURCE_DATA;
 				end
 
 				SOURCE_INSTRUCTION: begin
 					if (!instruction_enableLocalMemoryRequest) begin
-						if (data_enableLocalMemoryRequest) localMemory_source <= SOURCE_DATA;
-						else localMemory_source <= SOURCE_NONE;
+						if (data_enableLocalMemoryRequest) localMemory_source = SOURCE_DATA;
+						else localMemory_source = SOURCE_NONE;
 					end
 				end
 
 				SOURCE_DATA: begin
 					if (!data_enableLocalMemoryRequest) begin
-						if (instruction_enableLocalMemoryRequest) localMemory_source <= SOURCE_INSTRUCTION;
-						else localMemory_source <= SOURCE_NONE;
+						if (instruction_enableLocalMemoryRequest) localMemory_source = SOURCE_INSTRUCTION;
+						else localMemory_source = SOURCE_NONE;
 					end
 				end
 
 				default: begin
-					localMemory_source <= SOURCE_NONE;
+					localMemory_source = SOURCE_NONE;
 				end
 			endcase
 		end		
@@ -85,30 +85,30 @@ module MemoryController (
 	reg[1:0] wb_source = SOURCE_NONE;
 	always @(posedge clk) begin
 		if (rst) begin
-			wb_source <= SOURCE_NONE;
+			wb_source = SOURCE_NONE;
 		end else begin
 			case (wb_source)
 				SOURCE_NONE: begin
-					if (instruction_enableWBRequest) wb_source <= SOURCE_INSTRUCTION;
-					else if (data_enableWBRequest) wb_source <= SOURCE_DATA;
+					if (instruction_enableWBRequest) wb_source = SOURCE_INSTRUCTION;
+					else if (data_enableWBRequest) wb_source = SOURCE_DATA;
 				end
 
 				SOURCE_INSTRUCTION: begin
 					if (!instruction_enableWBRequest) begin
-						if (data_enableWBRequest) wb_source <= SOURCE_DATA;
-						else wb_source <= SOURCE_NONE;
+						if (data_enableWBRequest) wb_source = SOURCE_DATA;
+						else wb_source = SOURCE_NONE;
 					end
 				end
 
 				SOURCE_DATA: begin
 					if (!data_enableWBRequest) begin
-						if (instruction_enableWBRequest) wb_source <= SOURCE_INSTRUCTION;
-						else wb_source <= SOURCE_NONE;
+						if (instruction_enableWBRequest) wb_source = SOURCE_INSTRUCTION;
+						else wb_source = SOURCE_NONE;
 					end
 				end
 
 				default: begin
-					wb_source <= SOURCE_NONE;
+					wb_source = SOURCE_NONE;
 				end
 			endcase
 		end		
@@ -117,40 +117,40 @@ module MemoryController (
 	always @(*) begin
 		case (localMemory_source)
 			SOURCE_INSTRUCTION: begin
-				localMemoryAddress <= coreInstructionAddress[23:0];
-				localMemoryByteSelect <= 4'b1111;
-				localMemoryEnable <= coreInstructionEnable;
-				localMemoryWriteEnable <= 1'b0;
-				localMemoryDataWrite <= 32'b0;
+				localMemoryAddress = coreInstructionAddress[23:0];
+				localMemoryByteSelect = 4'b1111;
+				localMemoryEnable = coreInstructionEnable;
+				localMemoryWriteEnable = 1'b0;
+				localMemoryDataWrite = 32'b0;
 			end
 
 			SOURCE_DATA: begin
-				localMemoryAddress 	   <= coreDataAddress[23:0];
-				localMemoryByteSelect  <= coreDataByteSelect;
-				localMemoryEnable  	   <= coreDataEnable;
-				localMemoryWriteEnable <= coreDataWriteEnable;
-				localMemoryDataWrite   <= coreDataDataWrite;
+				localMemoryAddress 	   = coreDataAddress[23:0];
+				localMemoryByteSelect  = coreDataByteSelect;
+				localMemoryEnable  	   = coreDataEnable;
+				localMemoryWriteEnable = coreDataWriteEnable;
+				localMemoryDataWrite   = coreDataDataWrite;
 			end
 
 			default: begin
 				if (instruction_enableLocalMemoryRequest) begin
-					localMemoryAddress <= coreInstructionAddress[23:0];
-					localMemoryByteSelect <= 4'b1111;
-					localMemoryEnable <= coreInstructionEnable;
-					localMemoryWriteEnable <= 1'b0;
-					localMemoryDataWrite <= 32'b0;
+					localMemoryAddress = coreInstructionAddress[23:0];
+					localMemoryByteSelect = 4'b1111;
+					localMemoryEnable = coreInstructionEnable;
+					localMemoryWriteEnable = 1'b0;
+					localMemoryDataWrite = 32'b0;
 				end else if (data_enableLocalMemoryRequest) begin
-					localMemoryAddress 	   <= coreDataAddress[23:0];
-					localMemoryByteSelect  <= coreDataByteSelect;
-					localMemoryEnable  	   <= coreDataEnable;
-					localMemoryWriteEnable <= coreDataWriteEnable;
-					localMemoryDataWrite   <= coreDataDataWrite;
+					localMemoryAddress 	   = coreDataAddress[23:0];
+					localMemoryByteSelect  = coreDataByteSelect;
+					localMemoryEnable  	   = coreDataEnable;
+					localMemoryWriteEnable = coreDataWriteEnable;
+					localMemoryDataWrite   = coreDataDataWrite;
 				end else begin
-					localMemoryAddress 	   <= 24'b0;
-					localMemoryByteSelect  <=  4'b0;
-					localMemoryEnable  	   <=  1'b0;
-					localMemoryWriteEnable <=  1'b0;
-					localMemoryDataWrite   <= 32'b0;
+					localMemoryAddress 	   = 24'b0;
+					localMemoryByteSelect  =  4'b0;
+					localMemoryEnable  	   =  1'b0;
+					localMemoryWriteEnable =  1'b0;
+					localMemoryDataWrite   = 32'b0;
 				end
 			end
 		endcase
@@ -159,40 +159,40 @@ module MemoryController (
 	always @(*) begin
 		case (wb_source)
 			SOURCE_INSTRUCTION: begin
-				wbAddress 	  <= coreInstructionAddress[27:0];
-				wbByteSelect  <= 4'b1111;
-				wbEnable  	  <= coreInstructionEnable;
-				wbWriteEnable <= 1'b0;
-				wbDataWrite   <= 32'b0;
+				wbAddress 	  = coreInstructionAddress[27:0];
+				wbByteSelect  = 4'b1111;
+				wbEnable  	  = coreInstructionEnable;
+				wbWriteEnable = 1'b0;
+				wbDataWrite   = 32'b0;
 			end
 
 			SOURCE_DATA: begin
-				wbAddress 	  <= coreDataAddress[27:0];
-				wbByteSelect  <= coreDataByteSelect;
-				wbEnable  	  <= coreDataEnable;
-				wbWriteEnable <= coreDataWriteEnable;
-				wbDataWrite   <= coreDataDataWrite;
+				wbAddress 	  = coreDataAddress[27:0];
+				wbByteSelect  = coreDataByteSelect;
+				wbEnable  	  = coreDataEnable;
+				wbWriteEnable = coreDataWriteEnable;
+				wbDataWrite   = coreDataDataWrite;
 			end
 
 			default: begin
 				if (instruction_enableWBRequest) begin
-					wbAddress 	  <= coreInstructionAddress[27:0];
-					wbByteSelect  <= 4'b1111;
-					wbEnable  	  <= coreInstructionEnable;
-					wbWriteEnable <= 1'b0;
-					wbDataWrite   <= 32'b0;
+					wbAddress 	  = coreInstructionAddress[27:0];
+					wbByteSelect  = 4'b1111;
+					wbEnable  	  = coreInstructionEnable;
+					wbWriteEnable = 1'b0;
+					wbDataWrite   = 32'b0;
 				end else if (data_enableWBRequest) begin
-					wbAddress 	  <= coreDataAddress[27:0];
-					wbByteSelect  <= coreDataByteSelect;
-					wbEnable  	  <= coreDataEnable;
-					wbWriteEnable <= coreDataWriteEnable;
-					wbDataWrite   <= coreDataDataWrite;
+					wbAddress 	  = coreDataAddress[27:0];
+					wbByteSelect  = coreDataByteSelect;
+					wbEnable  	  = coreDataEnable;
+					wbWriteEnable = coreDataWriteEnable;
+					wbDataWrite   = coreDataDataWrite;
 				end else begin
-					wbAddress 	  <= 28'b0;
-					wbByteSelect  <=  4'b0;
-					wbEnable  	  <=  1'b0;
-					wbWriteEnable <=  1'b0;
-					wbDataWrite   <= 32'b0;
+					wbAddress 	  = 28'b0;
+					wbByteSelect  =  4'b0;
+					wbEnable  	  =  1'b0;
+					wbWriteEnable =  1'b0;
+					wbDataWrite   = 32'b0;
 				end
 			end
 		endcase

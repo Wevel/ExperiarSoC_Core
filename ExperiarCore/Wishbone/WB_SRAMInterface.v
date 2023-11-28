@@ -59,28 +59,28 @@ module WB_SRAMInterface (
 	
 	always @(posedge wb_clk_i) begin
 		if (wb_rst_i) begin
-			state <= STATE_IDLE;
-			stall <= 1'b0;
-			acknowledge <= 1'b0;
-			dataRead_buffered <= ~32'b0;
+			state = STATE_IDLE;
+			stall = 1'b0;
+			acknowledge = 1'b0;
+			dataRead_buffered = ~32'b0;
 		end else begin
 			case (state)
 				STATE_IDLE: begin
-					stall <= 1'b0;
-					acknowledge <= 1'b0;
-					dataRead_buffered <= ~32'b0;
+					stall = 1'b0;
+					acknowledge = 1'b0;
+					dataRead_buffered = ~32'b0;
 
 					if (wb_cyc_i) begin
 						if (wb_stb_i) begin
-							currentAddress <= wb_adr_i;
-							currentByteSelect <= wb_sel_i;
-							currentDataIn <= wb_data_i;
-							stall <= 1'b1;
+							currentAddress = wb_adr_i;
+							currentByteSelect = wb_sel_i;
+							currentDataIn = wb_data_i;
+							stall = 1'b1;
 
 							if (wb_we_i) begin
-								state <= STATE_WRITE_SINGLE;
+								state = STATE_WRITE_SINGLE;
 							end else begin
-								state <= STATE_READ_SINGLE;
+								state = STATE_READ_SINGLE;
 							end
 						end
 					end
@@ -88,30 +88,30 @@ module WB_SRAMInterface (
 
 				STATE_WRITE_SINGLE: begin
 					if (!peripheralBus_busy) begin
-						state <= STATE_FINISH;
-						acknowledge <= 1'b1;
+						state = STATE_FINISH;
+						acknowledge = 1'b1;
 					end
 				end
 
 				STATE_READ_SINGLE: begin
 					if (!peripheralBus_busy) begin
-						state <= STATE_FINISH;
-						acknowledge <= 1'b1;
-						dataRead_buffered <= peripheralBus_dataRead;
+						state = STATE_FINISH;
+						acknowledge = 1'b1;
+						dataRead_buffered = peripheralBus_dataRead;
 					end
 				end
 
 				STATE_FINISH: begin
-					state <= STATE_IDLE;
-					stall <= 1'b0;
-					acknowledge <= 1'b0;
-					dataRead_buffered <= ~32'b0;
+					state = STATE_IDLE;
+					stall = 1'b0;
+					acknowledge = 1'b0;
+					dataRead_buffered = ~32'b0;
 				end
 
 				default: begin
-					state <= STATE_IDLE;
-					stall <= 1'b0;
-					acknowledge <= 1'b0;
+					state = STATE_IDLE;
+					stall = 1'b0;
+					acknowledge = 1'b0;
 				end
 			endcase
 		end

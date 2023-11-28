@@ -93,10 +93,10 @@ module VideoMemory (
 	always @(*) begin
 		if (peripheralBusEnableSRAM) begin
 			case (peripheralBusSRAMBank)
-				2'b00: sram_csb0 <= 4'b1110;
-				2'b01: sram_csb0 <= 4'b1101;
-				2'b10: sram_csb0 <= 4'b1011;
-				2'b11: sram_csb0 <= 4'b0111;
+				2'b00: sram_csb0 = 4'b1110;
+				2'b01: sram_csb0 = 4'b1101;
+				2'b10: sram_csb0 = 4'b1011;
+				2'b11: sram_csb0 = 4'b0111;
 			endcase
 		end else begin
 			sram_csb0 <= 4'b1111;
@@ -131,10 +131,10 @@ module VideoMemory (
 	always @(*) begin
 		if (peripheralBusReadEnable) begin
 			case (peripheralBusSRAMBank)
-				2'b00: readData <= sram_dout0[31:0];
-				2'b01: readData <= sram_dout0[63:32];
-				2'b10: readData <= sram_dout0[95:64];
-				2'b11: readData <= sram_dout0[127:96];
+				2'b00: readData = sram_dout0[31:0];
+				2'b01: readData = sram_dout0[63:32];
+				2'b10: readData = sram_dout0[95:64];
+				2'b11: readData = sram_dout0[127:96];
 			endcase
 		end else begin
 			readData <= ~32'b0;
@@ -147,10 +147,10 @@ module VideoMemory (
 	always @(*) begin
 		if (video_fetchData) begin
 			case (videoSRAMBank)
-				2'b00: sram_csb1 <= 4'b1110;
-				2'b01: sram_csb1 <= 4'b1101;
-				2'b10: sram_csb1 <= 4'b1011;
-				2'b11: sram_csb1 <= 4'b0111;
+				2'b00: sram_csb1 = 4'b1110;
+				2'b01: sram_csb1 = 4'b1101;
+				2'b10: sram_csb1 = 4'b1011;
+				2'b11: sram_csb1 = 4'b0111;
 			endcase
 		end else begin
 			sram_csb1 <= 4'b1111;
@@ -162,10 +162,10 @@ module VideoMemory (
 	// Select return data for video port
 	always @(*) begin
 		case (videoSRAMBank)
-			2'b00: video_data <= sram_dout1[31:0];
-			2'b01: video_data <= sram_dout1[63:32];
-			2'b10: video_data <= sram_dout1[95:64];
-			2'b11: video_data <= sram_dout1[127:96];
+			2'b00: video_data = sram_dout1[31:0];
+			2'b01: video_data = sram_dout1[63:32];
+			2'b10: video_data = sram_dout1[95:64];
+			2'b11: video_data = sram_dout1[127:96];
 		endcase
 	end
 
