@@ -1,7 +1,8 @@
 `default_nettype none
 
 module UART #(
-		parameter ID = 8'h00
+		parameter ID = 8'h00,
+		parameter DEVICE_COUNT = 4
 	)(
 `ifdef USE_POWER_PINS
 		inout vccd1,	// User area 1 1.8V supply
@@ -10,7 +11,7 @@ module UART #(
 
 		input wire clk,
 		input wire rst,
-		
+
 		// Peripheral Bus
 		input wire peripheralBus_we,
 		input wire peripheralBus_oe,
@@ -22,13 +23,11 @@ module UART #(
 		output wire requestOutput,
 
 		// UART
-		output wire[3:0] uart_en,	
+		output wire[3:0] uart_en,
 		input wire[3:0] uart_rx,
 		output wire[3:0] uart_tx,
 		output wire[3:0] uart_irq
 	);
-
-	localparam DEVICE_COUNT = 4;
 
 	// Peripheral select
 	wire[15:0] localAddress;

@@ -226,7 +226,8 @@ def writeCachedMemoryPin(outputLines: list[str], pinName: str, memoryIndex: int,
 			outputLines.append(f"	assign gpio_input[PIN_{pinName}] = cachedMemory_en[{memoryIndex}] ? 1'b0 : (gpio_oe[PIN_{pinName}] ? io_in[PIN_{pinName}] : 1'b0);\n")
 			outputLines.append(f"	assign io_out[PIN_{pinName}] = cachedMemory_en[{memoryIndex}] ? cachedMemory_{pinType.lower()}_write[{memoryIndex}] : gpio_output[PIN_{pinName}];\n")
 			outputLines.append(f"	assign io_oeb[PIN_{pinName}] = cachedMemory_en[{memoryIndex}] ? !cachedMemory_{pinType.lower()}_we[{memoryIndex}] : gpio_oe[PIN_{pinName}];\n")
-			outputLines.append(f"	assign cachedMemory_{pinType.lower()}_read[{memoryIndex}] = cachedMemory_en[{memoryIndex}] && !cachedMemory_{pinType.lower()}_we[{memoryIndex}] ? io_in[PIN_{pinName}] : 1'b0;\n")
+			outputLines.append(
+			    f"	assign cachedMemory_{pinType.lower()}_read[{memoryIndex}] = cachedMemory_en[{memoryIndex}] && !cachedMemory_{pinType.lower()}_we[{memoryIndex}] ? io_in[PIN_{pinName}] : 1'b0;\n")
 	else:
 		if isOutput:
 			outputLines.append(f"	assign gpio_input[PIN_{pinName}] = 1'b0;\n")
@@ -350,13 +351,16 @@ def writeUndefinedPin(outputLines: list[str], pinName: str, isOutput: bool, allo
 
 
 def main():
-	pinMap = [(0, "Input", "JTAG"), (1, "Output", "SDO"), (2, "Input", "SDI"), (3, "Input", "CSB"), (4, "Input", "SCK"), (5, "Input", "GPIO/UART1_RX"), (6, "Output", "GPIO/UART1_TX"), (7, "Input", "GPIO/IRQ"), (8, "Output", "GPIO/CachedMemory0_CSB"),
-	          (9, "Output", "GPIO/CachedMemory0_SCK"), (10, "InOut", "GPIO/CachedMemory0_IO0"), (11, "InOut", "GPIO/CachedMemory0_IO1"), (12, "Output", "GPIO/CachedMemory1_CSB"), (13, "Output", "GPIO/CachedMemory1_SCK"), (14, "InOut", "GPIO/CachedMemory1_IO0"),
-	          (15, "InOut", "GPIO/CachedMemory1_IO1"), (16, "Output", "GPIO/PWM0"), (17, "Output", "GPIO/PWM1"), (18, "Output", "GPIO/PWM2"), (19, "Input", "GPIO/UART2_RX"), (20, "Output", "GPIO/UART2_TX"), (21, "Output", "GPIO/PWM3"), (22, "Output", "GPIO/SPI0_CLK"),
-	          (23, "Output", "GPIO/SPI0_MOSI"), (24, "Input", "GPIO/SPI0_MISO"), (25, "Output", "GPIO/SPI0_CS"), (26, "Input", "GPIO/UART3_RX"), (27, "Output", "GPIO/UART3_TX"), (28, "Output", "GPIO/BLINK0"), (29, "Output", "GPIO/BLINK1"), (30, "Output", "VGA_R0"),
-	          (31, "Output", "VGA_R1"), (32, "Output", "VGA_G0"), (33, "Output", "VGA_G1"), (34, "Output", "VGA_B0"), (35, "Output", "VGA_B1"), (36, "Output", "VGA_VSYNC"), (37, "Output", "VGA_HSYNC")]
+	pinMap = [(0, "Input", "JTAG"), (1, "Output", "SDO"), (2, "Input", "SDI"), (3, "Input", "CSB"), (4, "Input", "SCK"), (5, "Input", "GPIO/UART1_RX"), (6, "Output", "GPIO/UART1_TX"),
+	          (7, "Input", "GPIO/IRQ"), (8, "Output", "GPIO/CachedMemory0_CSB"), (9, "Output", "GPIO/CachedMemory0_SCK"), (10, "InOut", "GPIO/CachedMemory0_IO0"),
+	          (11, "InOut", "GPIO/CachedMemory0_IO1"), (12, "Output", "GPIO/CachedMemory1_CSB"), (13, "Output", "GPIO/CachedMemory1_SCK"), (14, "InOut", "GPIO/CachedMemory1_IO0"),
+	          (15, "InOut", "GPIO/CachedMemory1_IO1"), (16, "Output", "GPIO/PWM0"), (17, "Output", "GPIO/PWM1"), (18, "Output", "GPIO/PWM2"), (19, "Input", "GPIO/UART2_RX"),
+	          (20, "Output", "GPIO/UART2_TX"), (21, "Output", "GPIO/PWM3"), (22, "Output", "GPIO/SPI0_CLK"), (23, "Output", "GPIO/SPI0_MOSI"), (24, "Input", "GPIO/SPI0_MISO"),
+	          (25, "Output", "GPIO/SPI0_CS"), (26, "Input", "GPIO/UART3_RX"), (27, "Output", "GPIO/UART3_TX"), (28, "Output", "GPIO/BLINK0"), (29, "Output", "GPIO/BLINK1"), (30, "Output", "VGA_R0"),
+	          (31, "Output", "VGA_R1"), (32, "Output", "VGA_G0"), (33, "Output", "VGA_G1"), (34, "Output", "VGA_B0"), (35, "Output", "VGA_B1"), (36, "Output", "VGA_VSYNC"),
+	          (37, "Output", "VGA_HSYNC")]
 
-	GenerateVerilog(pinMap, f"{os.path.dirname(__file__)}/IOMultiplexer_top.v")
+	GenerateVerilog(pinMap, f"{os.path.dirname(__file__)}/IOMultiplexer.v")
 
 
 if __name__ == "__main__":

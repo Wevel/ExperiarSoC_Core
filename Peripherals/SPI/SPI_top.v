@@ -1,7 +1,8 @@
 `default_nettype none
 
 module SPI #(
-		parameter ID = 8'h01
+		parameter ID = 8'h01,
+		parameter DEVICE_COUNT = 1
 	)(
 `ifdef USE_POWER_PINS
 		inout vccd1,	// User area 1 1.8V supply
@@ -10,7 +11,7 @@ module SPI #(
 
 		input wire clk,
 		input wire rst,
-		
+
 		// Peripheral Bus
 		input wire peripheralBus_we,
 		input wire peripheralBus_oe,
@@ -27,8 +28,6 @@ module SPI #(
 		input  wire[DEVICE_COUNT-1:0] spi_miso,
 		output wire[DEVICE_COUNT-1:0] spi_cs
 	);
-
-	localparam DEVICE_COUNT = 1;
 
 	// Peripheral select
 	wire[15:0] localAddress;
@@ -69,7 +68,7 @@ module SPI #(
 				.spi_cs(spi_cs[i]));
 		end
 	endgenerate
-	
+
 	assign peripheralBus_busy = |deviceBusy;
 
 endmodule

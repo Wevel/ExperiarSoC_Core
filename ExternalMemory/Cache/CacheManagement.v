@@ -93,26 +93,25 @@ module CacheManagement #(
 	wire[2:0] statusRegisterValue = { cacheStoreData, cacheRequestData, cacheInitialised };
 	wire[31:0] statusRegisterOutputData;
 	wire statusRegisterOutputRequest;
-	wire statusRegisterBusBusy_nc;
-	wire[2:0] statusRegisterWriteData_nc;
-	wire statusRegisterWriteDataEnable_nc;
-	wire statusRegisterReadDataEnable_nc;
-	wire _unused_statusRegister = &{ 1'b0, statusRegisterBusBusy_nc, statusRegisterWriteData_nc, statusRegisterWriteDataEnable_nc, statusRegisterReadDataEnable_nc, 1'b0 };
+	wire _unused_statusRegisterBusBusy;
+	wire[2:0] _unused_statusRegisterWriteData;
+	wire _unused_statusRegisterWriteDataEnable;
+	wire _unused_statusRegisterReadDataEnable;
 	DataRegister #(.WIDTH(3), .ADDRESS(12'h004)) statusRegister(
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(statusRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_statusRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(statusRegisterOutputData),
 		.requestOutput(statusRegisterOutputRequest),
-		.writeData(statusRegisterWriteData_nc),
-		.writeData_en(statusRegisterWriteDataEnable_nc),
+		.writeData(_unused_statusRegisterWriteData),
+		.writeData_en(_unused_statusRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(statusRegisterValue),
-		.readData_en(statusRegisterReadDataEnable_nc),
+		.readData_en(_unused_statusRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 
@@ -123,8 +122,7 @@ module CacheManagement #(
 	wire currentPageAddressRegisterBusBusy;
 	wire[MANUAL_PAGE_ADDRESS_SIZE-1:0] currentPageAddressRegisterWriteData;
 	wire currentPageAddressRegisterWriteDataEnable;
-	wire currentPageAddressRegisterReadDataEnable_nc;
-	wire _unused_currentPageAddressRegister = &{ 1'b0, currentPageAddressRegisterReadDataEnable_nc, 1'b0 };
+	wire _unused_currentPageAddressRegisterReadDataEnable;
 	DataRegister #(.WIDTH(MANUAL_PAGE_ADDRESS_SIZE), .ADDRESS(12'h008)) currentPageAddressRegister(
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
@@ -139,7 +137,7 @@ module CacheManagement #(
 		.writeData_en(currentPageAddressRegisterWriteDataEnable),
 		.writeData_busy(!automaticPaging && cacheBusy),
 		.readData(currentManualPageAddress),
-		.readData_en(currentPageAddressRegisterReadDataEnable_nc),
+		.readData_en(_unused_currentPageAddressRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	always @(posedge clk) begin
@@ -163,26 +161,25 @@ module CacheManagement #(
 	// 	b16-b31: pageRequestLoad
 	wire[31:0] cacheStatusRegisterOutputData;
 	wire cacheStatusRegisterOutputRequest;
-	wire cacheStatusRegisterBusBusy_nc;
-	wire[PAGE_COUNT+PAGE_COUNT-1:0] cacheStatusRegisterWriteData_nc;
-	wire cacheStatusRegisterWriteDataEnable_nc;
-	wire cacheStatusRegisterReadDataEnable_nc;
-	wire _unused_cacheStatusRegister = &{ 1'b0, cacheStatusRegisterBusBusy_nc, cacheStatusRegisterWriteData_nc, cacheStatusRegisterWriteDataEnable_nc, cacheStatusRegisterReadDataEnable_nc, 1'b0 };
+	wire _unused_cacheStatusRegisterBusBusy;
+	wire[PAGE_COUNT+PAGE_COUNT-1:0] _unused_cacheStatusRegisterWriteData;
+	wire _unused_cacheStatusRegisterWriteDataEnable;
+	wire _unused_cacheStatusRegisterReadDataEnable;
 	DataRegister #(.WIDTH(PAGE_COUNT + PAGE_COUNT), .ADDRESS(12'h00C)) cacheStatusRegister(
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(cacheStatusRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_cacheStatusRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(cacheStatusRegisterOutputData),
 		.requestOutput(cacheStatusRegisterOutputRequest),
-		.writeData(cacheStatusRegisterWriteData_nc),
-		.writeData_en(cacheStatusRegisterWriteDataEnable_nc),
+		.writeData(_unused_cacheStatusRegisterWriteData),
+		.writeData_en(_unused_cacheStatusRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData({ pageRequestLoad, pageAddressSet }),
-		.readData_en(cacheStatusRegisterReadDataEnable_nc),
+		.readData_en(_unused_cacheStatusRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	// Cache status register 2
@@ -192,26 +189,25 @@ module CacheManagement #(
 	// 	b00-b15: pageRequestFlush
 	wire[31:0] cacheStatusRegister2OutputData;
 	wire cacheStatusRegister2OutputRequest;
-	wire cacheStatusRegister2BusBusy_nc;
-	wire[PAGE_COUNT-1:0] cacheStatusRegister2WriteData_nc;
-	wire cacheStatusRegister2WriteDataEnable_nc;
-	wire cacheStatusRegister2ReadDataEnable_nc;
-	wire _unused_cacheStatusRegister2 = &{ 1'b0, cacheStatusRegister2BusBusy_nc, cacheStatusRegister2WriteData_nc, cacheStatusRegister2WriteDataEnable_nc, cacheStatusRegister2ReadDataEnable_nc, 1'b0 };
+	wire _unused_cacheStatusRegister2BusBusy;
+	wire[PAGE_COUNT-1:0] _unused_cacheStatusRegister2WriteData;
+	wire _unused_cacheStatusRegister2WriteDataEnable;
+	wire _unused_cacheStatusRegister2ReadDataEnable;
 	DataRegister #(.WIDTH(PAGE_COUNT), .ADDRESS(12'h010)) cacheStatusRegister2(
 		.enable(registersEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(cacheStatusRegister2BusBusy_nc),
+		.peripheralBus_busy(_unused_cacheStatusRegister2BusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(cacheStatusRegister2OutputData),
 		.requestOutput(cacheStatusRegister2OutputRequest),
-		.writeData(cacheStatusRegister2WriteData_nc),
-		.writeData_en(cacheStatusRegister2WriteDataEnable_nc),
+		.writeData(_unused_cacheStatusRegister2WriteData),
+		.writeData_en(_unused_cacheStatusRegister2WriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData({ pageRequestFlush }),
-		.readData_en(cacheStatusRegister2ReadDataEnable_nc),
+		.readData_en(_unused_cacheStatusRegister2ReadDataEnable),
 		.readData_busy(1'b0));
 
 	// Assign peripheral read

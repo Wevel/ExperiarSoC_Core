@@ -49,8 +49,8 @@ module Traps (
 	reg[31:0] mtvalValue;
 	reg[31:0] mipValue;
 
-	wire[11:0] systemInterrupts = { isMachineExternalInterrupt, 1'b0, 1'b0, 1'b0, 
-									isMachineTimerInterrupt, 1'b0, 1'b0, 1'b0, 
+	wire[11:0] systemInterrupts = { isMachineExternalInterrupt, 1'b0, 1'b0, 1'b0,
+									isMachineTimerInterrupt, 1'b0, 1'b0, 1'b0,
 									isMachineSoftwareInterrupt, 1'b0, 1'b0, 1'b0 };
 	wire[31:0] pendingInterrupts = { userInterrupts, 4'b0000, systemInterrupts } & mieValue;
 
@@ -78,10 +78,10 @@ module Traps (
 				isDataAddressMisaligned_store: trapCause = 30'd6;
 				isDataAddressMisaligned_load: trapCause = 30'd4;
 				isDataAccessFault_store: trapCause = 30'd7;
-				isDataAccessFault_load: trapCause = 30'd5;				
+				isDataAccessFault_load: trapCause = 30'd5;
 				default: trapCause = 30'b0;
 			endcase
-		end		
+		end
 	end
 
 `ifdef SIM
@@ -107,7 +107,7 @@ module Traps (
 				isDataAccessFault_store: $display("%c[1;31mEntered Trap: DataAccessFault_store%c[0m", 27, 27);
 				isDataAccessFault_load: $display("%c[1;31mEntered Trap: DataAccessFault_load%c[0m", 27, 27);
 			endcase
-		end		
+		end
 	end
 `endif
 
@@ -130,16 +130,16 @@ module Traps (
 				 isDataAddressMisaligned_store || isDataAddressMisaligned_load: mtvalLoadValue =  data_memoryAddress;
 				 isInvalidInstruction: mtvalLoadValue = currentInstruction;
 				 default: mtvalLoadValue = 32'b0;
-			 endcase			
+			 endcase
 		 end else begin
 			 mtvalLoadValue = 32'b0;
-		 end 
+		 end
 	end
 
 	// mstatus
 	wire[31:0] mstatusReadData;
 	wire mstatusRequestOutput;
-	wire mstatusReadDataEnable_nc;
+	wire _unused_mstatusReadDataEnable;
 	wire[31:0] mstatusWriteData;
 	wire mstatusWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h300)) mstatus(
@@ -153,7 +153,7 @@ module Traps (
 		.csrReadData(mstatusReadData),
 		.csrRequestOutput(mstatusRequestOutput),
 		.readData( { 25'b0, machinePreviousInterruptEnable, 3'b0, machineInterruptEnable, 2'b0 } ),
-		.readDataEnable(mstatusReadDataEnable_nc),
+		.readDataEnable(_unused_mstatusReadDataEnable),
 		.writeData(mstatusWriteData),
 		.writeDataEnable(mstatusWriteDataEnable));
 
@@ -193,11 +193,11 @@ module Traps (
 
 	// mtvec
 	// In theory this is a WARL register, so only legal values can be read,
-	// This means that some bits should always be zero, but 
-	wire[31:0] mtvecValueValid = mtvecValue;//{ mtvecValue[31:4] , 2'b00, 1'b0, mtvecValue[0] }; 
+	// This means that some bits should always be zero, but
+	wire[31:0] mtvecValueValid = mtvecValue;//{ mtvecValue[31:4] , 2'b00, 1'b0, mtvecValue[0] };
 	wire mtvecRequestOutput;
 	wire[31:0] mtvecReadData;
-	wire mtvecReadDataEnable_nc;
+	wire _unused_mtvecReadDataEnable;
 	wire[31:0] mtvecWriteData;
 	wire mtvecWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h305)) mtvec(
@@ -211,7 +211,7 @@ module Traps (
 		.csrReadData(mtvecReadData),
 		.csrRequestOutput(mtvecRequestOutput),
 		.readData(mtvecValueValid),
-		.readDataEnable(mtvecReadDataEnable_nc),
+		.readDataEnable(_unused_mtvecReadDataEnable),
 		.writeData(mtvecWriteData),
 		.writeDataEnable(mtvecWriteDataEnable));
 
@@ -230,7 +230,7 @@ module Traps (
 	// mscratch
 	wire[31:0] mscratchReadData;
 	wire mscratchRequestOutput;
-	wire[31:0] mscratchValue_nc;
+	wire[31:0] _unused_mscratchValue;
 	CSR_ConfigurationRegister #(.ADDRESS(12'h340), .DEFAULT(32'b0)) mscratch (
 		.clk(clk),
 		.rst(rst),
@@ -241,12 +241,12 @@ module Traps (
 		.csrWriteData(csrWriteData),
 		.csrReadData(mscratchReadData),
 		.csrRequestOutput(mscratchRequestOutput),
-		.value(mscratchValue_nc));
+		.value(_unused_mscratchValue));
 
 	// mepc
 	wire[31:0] mepcReadData;
 	wire mepcRequestOutput;
-	wire mepcReadDataEnable_nc;
+	wire _unused_mepcReadDataEnable;
 	wire[31:0] mepcWriteData;
 	wire mepcWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h341)) mepc(
@@ -260,7 +260,7 @@ module Traps (
 		.csrReadData(mepcReadData),
 		.csrRequestOutput(mepcRequestOutput),
 		.readData({ mepcValue[31:1], 1'b0 }),
-		.readDataEnable(mepcReadDataEnable_nc),
+		.readDataEnable(_unused_mepcReadDataEnable),
 		.writeData(mepcWriteData),
 		.writeDataEnable(mepcWriteDataEnable));
 
@@ -277,7 +277,7 @@ module Traps (
 	// mcause
 	wire[31:0] mcauseReadData;
 	wire mcauseRequestOutput;
-	wire mcauseReadDataEnable_nc;
+	wire _unused_mcauseReadDataEnable;
 	wire[31:0] mcauseWriteData;
 	wire mcauseWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h342)) mcause(
@@ -291,7 +291,7 @@ module Traps (
 		.csrReadData(mcauseReadData),
 		.csrRequestOutput(mcauseRequestOutput),
 		.readData(mcauseValue),
-		.readDataEnable(mcauseReadDataEnable_nc),
+		.readDataEnable(_unused_mcauseReadDataEnable),
 		.writeData(mcauseWriteData),
 		.writeDataEnable(mcauseWriteDataEnable));
 
@@ -306,7 +306,7 @@ module Traps (
 	// mtval
 	wire[31:0] mtvalReadData;
 	wire mtvalRequestOutput;
-	wire mtvalReadDataEnable_nc;
+	wire _unused_mtvalReadDataEnable;
 	wire[31:0] mtvalWriteData;
 	wire mtvalWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h343)) mtval(
@@ -320,7 +320,7 @@ module Traps (
 		.csrReadData(mtvalReadData),
 		.csrRequestOutput(mtvalRequestOutput),
 		.readData(mtvalValue),
-		.readDataEnable(mtvalReadDataEnable_nc),
+		.readDataEnable(_unused_mtvalReadDataEnable),
 		.writeData(mtvalWriteData),
 		.writeDataEnable(mtvalWriteDataEnable));
 
@@ -335,7 +335,7 @@ module Traps (
 	// mip
 	wire[31:0] mipReadData;
 	wire mipRequestOutput;
-	wire mipReadDataEnable_nc;
+	wire _unused_mipReadDataEnable;
 	wire[31:0] mipWriteData;
 	wire mipWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h344)) mip(
@@ -349,7 +349,7 @@ module Traps (
 		.csrReadData(mipReadData),
 		.csrRequestOutput(mipRequestOutput),
 		.readData(mipValue),
-		.readDataEnable(mipReadDataEnable_nc),
+		.readDataEnable(_unused_mipReadDataEnable),
 		.writeData(mipWriteData),
 		.writeDataEnable(mipWriteDataEnable));
 
@@ -361,10 +361,10 @@ module Traps (
 		end
 	end
 
-	assign requestOutput = mstatusRequestOutput 
-						|| mieRequestOutput 
-						|| mtvecRequestOutput 
-						|| mscratchRequestOutput 
+	assign requestOutput = mstatusRequestOutput
+						|| mieRequestOutput
+						|| mtvecRequestOutput
+						|| mscratchRequestOutput
 						|| mepcRequestOutput
 						|| mcauseRequestOutput
 						|| mtvalRequestOutput

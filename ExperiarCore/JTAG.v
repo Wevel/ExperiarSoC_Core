@@ -125,14 +125,14 @@ module JTAG (
 	// Bypass register
 	wire drBypassSelect = currentInstruction == INSTRUCTION_BYPASS;
 	wire drBypassDataOut;
-	wire dataBypassRegisterParallelOut_nc;
+	wire _unused_dataBypassRegisterParallelOut;
 	JTAGRegister #(.WIDTH(1)) dataBypassRegister (
 		.clk(clk),
 		.rst(rst),
 		.loadEnable(drBypassSelect && drCapture && tckRisingEdge),
 		.shiftEnable(drBypassSelect && drShiftEnable && tckRisingEdge),
 		.parallelIn(1'b0),
-		.parallelOut(dataBypassRegisterParallelOut_nc),
+		.parallelOut(_unused_dataBypassRegisterParallelOut),
 		.serialIn(jtag_tdi),
 		.serialOut(drBypassDataOut));
 
@@ -142,14 +142,14 @@ module JTAG (
 	wire drIDSelect = drIDUserCode || drIDBaseCode;
 	wire[31:0] drIDDataIn = drIDUserCode ? coreID : idcode;
 	wire drIDDataOut;
-	wire[31:0] dataIDRegisterParallelOut_nc;
+	wire[31:0] _unused_dataIDRegisterParallelOut;
 	JTAGRegister #(.WIDTH(32)) dataIDRegister (
 		.clk(clk),
 		.rst(rst),
 		.loadEnable(drIDSelect && drCapture && tckRisingEdge),
 		.shiftEnable(drIDSelect && drShiftEnable && tckRisingEdge),
 		.parallelIn(drIDDataIn),
-		.parallelOut(dataIDRegisterParallelOut_nc),
+		.parallelOut(_unused_dataIDRegisterParallelOut),
 		.serialIn(jtag_tdi),
 		.serialOut(drIDDataOut));
 

@@ -26,8 +26,6 @@ module SPIDevice #(
 		output wire spi_cs
 	);
 
-	localparam CLOCK_BITS = $clog2(CLOCK_WIDTH);
-
 	localparam STATE_IDLE  = 2'b00;
 	localparam STATE_SETUP = 2'b01;
 	localparam STATE_SHIFT = 2'b10;
@@ -79,35 +77,35 @@ module SPIDevice #(
 	wire deviceBusy = state != STATE_IDLE;
 	wire[31:0] statusRegisterOutputData;
 	wire statusRegisterOutputRequest;
-	wire statusRegisterWriteData_nc;
-	wire statusRegisterWriteDataEnable_nc;
-	wire statusRegisterReadDataEnable_nc;
-	wire statusRegisterBusBusy_nc;
+	wire _unused_statusRegisterWriteData;
+	wire _unused_statusRegisterWriteDataEnable;
+	wire _unused_statusRegisterReadDataEnable;
+	wire _unused_statusRegisterBusBusy;
 	DataRegister #(.WIDTH(1), .ADDRESS(12'h004)) statusRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(statusRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_statusRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(statusRegisterOutputData),
 		.requestOutput(statusRegisterOutputRequest),
-		.writeData(statusRegisterWriteData_nc),
-		.writeData_en(statusRegisterWriteDataEnable_nc),
+		.writeData(_unused_statusRegisterWriteData),
+		.writeData_en(_unused_statusRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(deviceBusy),
-		.readData_en(statusRegisterReadDataEnable_nc),
+		.readData_en(_unused_statusRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	// Input and Output register
 	wire[31:0] dataRegisterOutputData;
 	wire dataRegisterOutputRequest;
 	wire[7:0] dataRegisterReadData;
-	wire[7:0] dataRegisterWriteData;	
+	wire[7:0] dataRegisterWriteData;
 	wire dataRegisterWriteDataEnable;
 	wire dataRegisterBusBusy;
-	wire dataRegisterReadDataEnable_nc;
+	wire _unused_dataRegisterReadDataEnable;
 	DataRegister #(.WIDTH(8), .ADDRESS(12'h008)) dataRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
@@ -122,12 +120,12 @@ module SPIDevice #(
 		.writeData_en(dataRegisterWriteDataEnable),
 		.writeData_busy(deviceBusy),
 		.readData(dataRegisterReadData),
-		.readData_en(dataRegisterReadDataEnable_nc),
+		.readData_en(_unused_dataRegisterReadDataEnable),
 		.readData_busy(deviceBusy));
 
 	// State control
 	reg[1:0] state = STATE_IDLE;
-	
+
 	reg[2:0] bitCounter = 3'b0;
 	wire[2:0] nextBitCounter = bitCounter + 1;
 
@@ -144,7 +142,7 @@ module SPIDevice #(
 
 	wire shiftInEnable  = spiSampleMode ? spiClockFall : spiClockRise;
 	wire shiftOutEnable = spiSampleMode ? spiClockRise : spiClockFall;
-	
+
 	wire serialOut;
 	ShiftRegister #(.WIDTH(8)) register (
 		.clk(clk),
@@ -160,96 +158,96 @@ module SPIDevice #(
 
 	always @(posedge clk) begin
 		if (rst) begin
-			state = STATE_IDLE;
-			bitCounter = 3'b0;
-			clockCounter = {CLOCK_WIDTH{1'b0}};
-			spiClockRise = 1'b0;
-			spiClockFall = 1'b0;
-			spiClock = 1'b0;
+			state <= STATE_IDLE;
+			bitCounter <= 3'b0;
+			clockCounter <= {CLOCK_WIDTH{1'b0}};
+			spiClockRise <= 1'b0;
+			spiClockFall <= 1'b0;
+			spiClock <= 1'b0;
 		end else begin
 			case (state)
 				STATE_IDLE: begin
-					bitCounter = 3'b0;
-					clockCounter = {CLOCK_WIDTH{1'b0}};
-					spiClockRise = 1'b0;
-					spiClockFall = 1'b0;
-					spiClock = 1'b0;
+					bitCounter <= 3'b0;
+					clockCounter <= {CLOCK_WIDTH{1'b0}};
+					spiClockRise <= 1'b0;
+					spiClockFall <= 1'b0;
+					spiClock <= 1'b0;
 
-					if (dataRegisterWriteDataEnable && peripheralBus_byteSelect[0]) begin 
-						state = STATE_SETUP;
+					if (dataRegisterWriteDataEnable && peripheralBus_byteSelect[0]) begin
+						state <= STATE_SETUP;
 					end
 				end
 
 				STATE_SETUP: begin
-					clockCounter = nextClockCounter;
+					clockCounter <= nextClockCounter;
 
 					if (halfClockCounterMatch) begin
-						bitCounter = 1'b0;
-						spiClock = 1'b1;
-						state = STATE_SHIFT;
+						bitCounter <= 3'b0;
+						spiClock <= 1'b1;
+						state <= STATE_SHIFT;
 
 						if (spiClockPolarity) begin
-							spiClockRise = 1'b0;
-							spiClockFall = 1'b1;
+							spiClockRise <= 1'b0;
+							spiClockFall <= 1'b1;
 						end else begin
-							spiClockRise = 1'b1;
-							spiClockFall = 1'b0;
-						end	
-					end					
+							spiClockRise <= 1'b1;
+							spiClockFall <= 1'b0;
+						end
+					end
 				end
 
 				STATE_SHIFT: begin
 					if (clockCounterMatch) begin
-						clockCounter = {CLOCK_WIDTH{1'b0}};
-						spiClock = 1'b0;
+						clockCounter <= {CLOCK_WIDTH{1'b0}};
+						spiClock <= 1'b0;
 
 						if (spiClockPolarity) begin
-							spiClockRise = 1'b1;
-							spiClockFall = 1'b0;
+							spiClockRise <= 1'b1;
+							spiClockFall <= 1'b0;
 						end else begin
-							spiClockRise = 1'b0;
-							spiClockFall = 1'b1;
+							spiClockRise <= 1'b0;
+							spiClockFall <= 1'b1;
 						end
 
 						if (bitCounter == 3'h7) begin
-							state = STATE_END;
+							state <= STATE_END;
 						end	else begin
-							bitCounter = nextBitCounter;
+							bitCounter <= nextBitCounter;
 						end
 					end else if (halfClockCounterMatch) begin
 						if (spiClockPolarity) begin
-							spiClockRise = 1'b0;
-							spiClockFall = 1'b1;
+							spiClockRise <= 1'b0;
+							spiClockFall <= 1'b1;
 						end else begin
-							spiClockRise = 1'b1;
-							spiClockFall = 1'b0;
-						end	
+							spiClockRise <= 1'b1;
+							spiClockFall <= 1'b0;
+						end
 
-						spiClock = 1'b1;
-						clockCounter = nextClockCounter;
+						spiClock <= 1'b1;
+						clockCounter <= nextClockCounter;
 					end else begin
-						spiClockRise = 1'b0;
-						spiClockFall = 1'b0;
-						clockCounter = nextClockCounter;
+						spiClockRise <= 1'b0;
+						spiClockFall <= 1'b0;
+						clockCounter <= nextClockCounter;
 					end
 				end
 
 				STATE_END: begin
-					spiClockRise = 1'b0;
-					spiClockFall = 1'b0;
-					spiClock = 1'b0;
-					
-					if (clockCounterMatch) state = STATE_IDLE;
-					else clockCounter = nextClockCounter;
+					spiClockRise <= 1'b0;
+					spiClockFall <= 1'b0;
+					spiClock <= 1'b0;
+
+					if (clockCounterMatch) state <= STATE_IDLE;
+					else clockCounter <= nextClockCounter;
 				end
 
 				default: begin
-					state = STATE_IDLE;
-					bitCounter = 3'b0;
-					clockCounter = {CLOCK_WIDTH{1'b0}};
-					spiClockRise = 1'b0;
-					spiClockFall = 1'b0;
-					spiClock = 1'b0;
+					state <= STATE_IDLE;
+					bitCounter <= 3'b0;
+					clockCounter <= {CLOCK_WIDTH{1'b0}};
+					spiClockRise <= 1'b0;
+					spiClockFall <= 1'b0;
+					spiClock <= 1'b0;
 				end
 			endcase
 		end

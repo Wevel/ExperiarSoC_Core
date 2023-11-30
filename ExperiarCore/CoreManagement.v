@@ -44,9 +44,9 @@ module CoreManagement (
 
 	wire peripheralBus_we = jtag_management_writeEnable || (!jtagSelect && wb_management_writeEnable);
 	wire peripheralBus_oe = (jtag_management_enable && !jtag_management_writeEnable)  || (!jtagSelect && wb_management_enable && !wb_management_writeEnable);
-	wire[19:0] peripheralBus_address = jtagSelect ? jtag_management_address : 
+	wire[19:0] peripheralBus_address = jtagSelect ? jtag_management_address :
 								   	   wbSelect   ? wb_management_address   : 20'b0;
-	wire[3:0] peripheralBus_byteSelect = jtagSelect ? jtag_management_byteSelect : 
+	wire[3:0] peripheralBus_byteSelect = jtagSelect ? jtag_management_byteSelect :
 								   	     wbSelect   ? wb_management_byteSelect   : 4'h0;
 	wire[31:0] peripheralBus_dataWrite = jtag_management_writeEnable ? jtag_management_writeData :
 									 	 wb_management_writeEnable   ? wb_management_writeData   : 32'b0;
@@ -70,13 +70,13 @@ module CoreManagement (
 	wire controlRegisterOutputRequest;
 	wire[3:0] controlWriteData;
 	wire controlWriteDataEnable;
-	wire controlRegisterBusy_nc;
-	wire controlRegisterReadDataEnable_nc;
+	wire _unused_controlRegisterBusy;
+	wire _unused_controlRegisterReadDataEnable;
 	DataRegister #(.WIDTH(4), .ADDRESS(12'h000)) controlRegister(
 		.enable(registerEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(controlRegisterBusy_nc),
+		.peripheralBus_busy(_unused_controlRegisterBusy),
 		.peripheralBus_address(peripheralBus_address[11:0]),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
@@ -86,7 +86,7 @@ module CoreManagement (
 		.writeData_en(controlWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(control),
-		.readData_en(controlRegisterReadDataEnable_nc),
+		.readData_en(_unused_controlRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	always @(posedge clk) begin
@@ -151,8 +151,8 @@ module CoreManagement (
 	assign management_writeData = peripheralBus_dataWrite;
 
 	assign peripheralBus_dataRead = coreEnable 			 					  ? management_readData 				   :
-									controlRegisterOutputRequest			  ? controlRegisterOutputData			   : 
-									instructionBreakpointAddressOutputRequest ? instructionBreakpointAddressOutputData : 
+									controlRegisterOutputRequest			  ? controlRegisterOutputData			   :
+									instructionBreakpointAddressOutputRequest ? instructionBreakpointAddressOutputData :
 									dataBreakpointAddressOutputRequest 		  ? dataBreakpointAddressOutputData 	   : ~32'b0;
-	
+
 endmodule

@@ -1,5 +1,17 @@
 `default_nettype none
 
+`ifndef MPRJ_IO_PADS_1
+	`define MPRJ_IO_PADS_1 19
+`endif
+
+`ifndef MPRJ_IO_PADS_2
+	`define MPRJ_IO_PADS_2 19
+`endif
+
+`ifndef MPRJ_IO_PADS
+	`define MPRJ_IO_PADS (`MPRJ_IO_PADS_1 + `MPRJ_IO_PADS_2)
+`endif
+
 module GPIO #(
 		parameter ID = 8'h03
 	)(
@@ -10,7 +22,7 @@ module GPIO #(
 
 		input wire clk,
 		input wire rst,
-		
+
 		// Peripheral Bus
 		input wire peripheralBus_we,
 		input wire peripheralBus_oe,
@@ -26,7 +38,7 @@ module GPIO #(
 		output wire[`MPRJ_IO_PADS-1:0] gpio_oe,
 		output wire[1:0] gpio_irq
 	);
-	
+
 	wire[`MPRJ_IO_PADS_1-1:0] gpio0_input;
 	wire[`MPRJ_IO_PADS_1-1:0] gpio0_output;
 	wire[`MPRJ_IO_PADS_1-1:0] gpio0_oe;
@@ -44,14 +56,14 @@ module GPIO #(
 
 	wire[31:0] device0OutputData;
 	wire device0OutputRequest;
-	wire device0BusBusy_nc;
+	wire _unused_device0BusBusy;
 	GPIODevice #(.ID(4'h1), .IO_COUNT(`MPRJ_IO_PADS_1)) device0(
 		.clk(clk),
 		.rst(rst),
 		.peripheralEnable(peripheralEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(device0BusBusy_nc),
+		.peripheralBus_busy(_unused_device0BusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
@@ -64,14 +76,14 @@ module GPIO #(
 
 	wire[31:0] device1OutputData;
 	wire device1OutputRequest;
-	wire device1BusBusy_nc;
+	wire _unused_device1BusBusy;
 	GPIODevice #(.ID(4'h2), .IO_COUNT(`MPRJ_IO_PADS_2)) device1(
 		.clk(clk),
 		.rst(rst),
 		.peripheralEnable(peripheralEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(device1BusBusy_nc),
+		.peripheralBus_busy(_unused_device1BusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),

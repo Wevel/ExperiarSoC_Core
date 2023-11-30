@@ -16,7 +16,7 @@ module UARTDevice  #(
 		output wire[31:0] peripheralBus_dataRead,
 		input wire[31:0] peripheralBus_dataWrite,
 		output wire requestOutput,
-		
+
 		// PWM output
 		output wire uart_en,
 		input wire uart_rx,
@@ -103,25 +103,25 @@ module UARTDevice  #(
 	// Clear register
 	wire[3:0] clearWriteData;
 	wire clearWriteEnable;
-	wire clearRegisterBusyBusy_nc;
-	wire[31:0] clearRegisterDataOut;
-	wire clearRegisterRequestOutput_nc;
-	wire clearRegisterReadDataEnable_nc;
+	wire _unused_clearRegisterBusyBusy;
+	wire[31:0] _unused_clearRegisterDataOut;
+	wire _unused_clearRegisterRequestOutput;
+	wire _unused_clearRegisterReadDataEnable;
 	DataRegister #(.WIDTH(4), .ADDRESS(12'h004)) clearRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(clearRegisterBusyBusy_nc),
+		.peripheralBus_busy(_unused_clearRegisterBusyBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
-		.peripheralBus_dataRead(clearRegisterDataOut),
-		.requestOutput(clearRegisterRequestOutput_nc),
+		.peripheralBus_dataRead(_unused_clearRegisterDataOut),
+		.requestOutput(_unused_clearRegisterRequestOutput),
 		.writeData(clearWriteData),
 		.writeData_en(clearWriteEnable),
 		.writeData_busy(1'b0),
 		.readData(4'b0),
-		.readData_en(clearRegisterReadDataEnable_nc),
+		.readData_en(_unused_clearRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	// Status register
@@ -134,36 +134,36 @@ module UARTDevice  #(
 	reg[5:0] statusRegisterBuffered;
 	wire[31:0] statusRegisterOutputData;
 	wire statusRegisterOutputRequest;
-	wire statusRegisterBusBusy_nc;
-	wire[5:0] statusRegisterWriteData_nc;
-	wire statusRegisterWriteDataEnable_nc;
-	wire statusRegisterReadDataEnable_nc;
+	wire _unused_statusRegisterBusBusy;
+	wire[5:0] _unused_statusRegisterWriteData;
+	wire _unused_statusRegisterWriteDataEnable;
+	wire _unused_statusRegisterReadDataEnable;
 	DataRegister #(.WIDTH(6), .ADDRESS(12'h008)) statusRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(statusRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_statusRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(statusRegisterOutputData),
 		.requestOutput(statusRegisterOutputRequest),
-		.writeData(statusRegisterWriteData_nc),
-		.writeData_en(statusRegisterWriteDataEnable_nc),
+		.writeData(_unused_statusRegisterWriteData),
+		.writeData_en(_unused_statusRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(statusRegisterBuffered),
-		.readData_en(statusRegisterReadDataEnable_nc),
+		.readData_en(_unused_statusRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	always @(posedge clk) begin
 		if (rst) statusRegisterBuffered <= 6'b0;
 		else begin
-			statusRegisterBuffered <= { 
-				txDataLostBuffered, 
-				txBufferFullBuffered, 
-				txDataAvailableBuffered, 
-				rxDataLostBuffered, 
-				rxBufferFullBuffered, 
+			statusRegisterBuffered <= {
+				txDataLostBuffered,
+				txBufferFullBuffered,
+				txDataAvailableBuffered,
+				rxDataLostBuffered,
+				rxBufferFullBuffered,
 				rxDataAvailableBuffered
 			};
 		end
@@ -175,21 +175,21 @@ module UARTDevice  #(
 	wire rxRegisterOutputRequest;
 	wire[7:0] rxReadData;
 	wire rxReadDataEnable;
-	wire rxRegisterBusyBusy_nc;
-	wire[8:0] rxRegisterWriteData_nc;
-	wire rxRegisterWriteDataEnable_nc;
+	wire _unused_rxRegisterBusyBusy;
+	wire[8:0] _unused_rxRegisterWriteData;
+	wire _unused_rxRegisterWriteDataEnable;
 	DataRegister #(.WIDTH(9), .ADDRESS(12'h00C)) rxRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(rxRegisterBusyBusy_nc),
+		.peripheralBus_busy(_unused_rxRegisterBusyBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(rxRegisterOutputData),
 		.requestOutput(rxRegisterOutputRequest),
-		.writeData(rxRegisterWriteData_nc),
-		.writeData_en(rxRegisterWriteDataEnable_nc),
+		.writeData(_unused_rxRegisterWriteData),
+		.writeData_en(_unused_rxRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(rxRegisterBuffered),
 		.readData_en(rxReadDataEnable),
@@ -203,10 +203,10 @@ module UARTDevice  #(
 	// Tx register
 	wire[31:0] txRegisterOutputData;
 	wire txRegisterOutputRequest;
-	wire[7:0] txWriteData;	
+	wire[7:0] txWriteData;
 	wire txWriteDataEnable;
 	wire txBusy;
-	wire txRegisterReadDataEnable_nc;
+	wire _unused_txRegisterReadDataEnable;
 	DataRegister #(.WIDTH(8), .ADDRESS(12'h010)) txRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
@@ -221,7 +221,7 @@ module UARTDevice  #(
 		.writeData_en(txWriteDataEnable),
 		.writeData_busy(waitForTxSpace && txBufferFull && uart_en),
 		.readData(8'b0),
-		.readData_en(txRegisterReadDataEnable_nc),
+		.readData_en(_unused_txRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	wire [7:0] rxByteIn;
@@ -233,7 +233,7 @@ module UARTDevice  #(
 		.rx(uart_en ? uart_rx : 1'b1),
 		.dataOut(rxByteIn),
 		.dataAvailable(rxOutAvailable));
-	
+
 	wire txSendBusy;
 	wire[7:0] txByteOut;
 	UART_tx #(.CLOCK_SCALE_BITS(16)) uartTx(
@@ -252,7 +252,7 @@ module UARTDevice  #(
 		.dataIn(rxByteIn),
 		.we(rxOutAvailable && uart_en),
 		.dataOut(rxReadData),
-		.oe(rxReadDataEnable),		
+		.oe(rxReadDataEnable),
 		.isData(rxDataAvailable),
 		.bufferFull(rxBufferFull),
 		.dataLost(rxDataLost));
@@ -263,7 +263,7 @@ module UARTDevice  #(
 		.dataIn(txWriteData),
 		.we(txWriteDataEnable && peripheralBus_byteSelect[0] && (!waitForTxSpace || !txBufferFull)),
 		.dataOut(txByteOut),
-		.oe(txDataAvailable && uart_en && !txSendBusy),		
+		.oe(txDataAvailable && uart_en && !txSendBusy),
 		.isData(txDataAvailable),
 		.bufferFull(txBufferFull),
 		.dataLost(txDataLost));

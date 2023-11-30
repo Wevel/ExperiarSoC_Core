@@ -1,6 +1,15 @@
 `default_nettype none
 
-module Peripherals (
+`ifndef MPRJ_IO_PADS
+	`define MPRJ_IO_PADS (19 + 19)
+`endif
+
+`define UART_COUNT 4
+`define PWM_COUNT 4
+`define PWM_OUTPUTS_PER_DEVICE 1
+`define SPI_COUNT 1
+
+module Peripherals_top (
 `ifdef USE_POWER_PINS
 		inout vccd1,	// User area 1 1.8V supply
 		inout vssd1,	// User area 1 digital ground
@@ -98,13 +107,15 @@ module Peripherals (
 		.peripheralBus_dataRead(peripheralBus_dataRead),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite));
 
+	wire uart_peripheralBus_busy;
 	wire[31:0] uart_peripheralBus_dataRead;
 	wire uart_requestOutput;
-	wire[3:0] uart_en;	
-	wire[3:0] uart_rx;
-	wire[3:0] uart_tx;
-	wire[3:0] uart_irq;
-	UART #(.ID(8'h00)) uart(
+	wire[`UART_COUNT-1:0] uart_en;
+	wire[`UART_COUNT-1:0] uart_rx;
+	wire[`UART_COUNT-1:0] uart_tx;
+	wire[`UART_COUNT-1:0] uart_irq;
+	wire _unused_uart_en0 = uart_en[0]; // Internal UART
+	UART #(.ID(8'h00), .DEVICE_COUNT(`UART_COUNT)) uart(
 	`ifdef USE_POWER_PINS
 		.vccd1(vccd1),	// User area 1 1.8V power
 		.vssd1(vssd1),	// User area 1 digital ground
@@ -113,7 +124,7 @@ module Peripherals (
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(peripheralBus_busy),
+		.peripheralBus_busy(uart_peripheralBus_busy),
 		.peripheralBus_address(peripheralBus_address),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataRead(uart_peripheralBus_dataRead),
@@ -127,14 +138,15 @@ module Peripherals (
 	assign uart_rx[0] = internal_uart_rx;
 	assign internal_uart_tx = uart_tx[0];
 
+	wire spi_peripheralBus_busy;
 	wire[31:0] spi_peripheralBus_dataRead;
 	wire spi_requestOutput;
-	wire[0:0] spi_en;
-	wire[0:0] spi_clk;
-	wire[0:0] spi_mosi;
-	wire[0:0] spi_miso;
-	wire[0:0] spi_cs;
-	SPI #(.ID(8'h01)) spi(
+	wire[`SPI_COUNT-1:0] spi_en;
+	wire[`SPI_COUNT-1:0] spi_clk;
+	wire[`SPI_COUNT-1:0] spi_mosi;
+	wire[`SPI_COUNT-1:0] spi_miso;
+	wire[`SPI_COUNT-1:0] spi_cs;
+	SPI #(.ID(8'h01), .DEVICE_COUNT(`SPI_COUNT)) spi(
 	`ifdef USE_POWER_PINS
 		.vccd1(vccd1),	// User area 1 1.8V power
 		.vssd1(vssd1),	// User area 1 digital ground
@@ -143,7 +155,7 @@ module Peripherals (
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(peripheralBus_busy),
+		.peripheralBus_busy(spi_peripheralBus_busy),
 		.peripheralBus_address(peripheralBus_address),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataRead(spi_peripheralBus_dataRead),
@@ -155,12 +167,13 @@ module Peripherals (
 		.spi_miso(spi_miso),
 		.spi_cs(spi_cs));
 
+	wire pwm_peripheralBus_busy;
 	wire[31:0] pwm_peripheralBus_dataRead;
 	wire pwm_requestOutput;
-	wire[15:0] pwm_en;
-	wire[15:0] pwm_out;
-	wire[3:0] pwm_irq;
-	PWM #(.ID(8'h02)) pwm(
+	wire[(`PWM_COUNT*`PWM_OUTPUTS_PER_DEVICE)-1:0] pwm_en;
+	wire[(`PWM_COUNT*`PWM_OUTPUTS_PER_DEVICE)-1:0] pwm_out;
+	wire[`PWM_COUNT-1:0] pwm_irq;
+	PWM #(.ID(8'h02), .DEVICE_COUNT(`PWM_COUNT), .OUTPUTS_PER_DEVICE(`PWM_OUTPUTS_PER_DEVICE)) pwm(
 	`ifdef USE_POWER_PINS
 		.vccd1(vccd1),	// User area 1 1.8V power
 		.vssd1(vssd1),	// User area 1 digital ground
@@ -169,7 +182,7 @@ module Peripherals (
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(peripheralBus_busy),
+		.peripheralBus_busy(pwm_peripheralBus_busy),
 		.peripheralBus_address(peripheralBus_address),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataRead(pwm_peripheralBus_dataRead),
@@ -179,6 +192,7 @@ module Peripherals (
 		.pwm_out(pwm_out),
 		.pwm_irq(pwm_irq));
 
+	wire gpio_peripheralBus_busy;
 	wire[31:0] gpio_peripheralBus_dataRead;
 	wire gpio_requestOutput;
 	wire[`MPRJ_IO_PADS-1:0] gpio_input;
@@ -194,7 +208,7 @@ module Peripherals (
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(peripheralBus_busy),
+		.peripheralBus_busy(gpio_peripheralBus_busy),
 		.peripheralBus_address(peripheralBus_address),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataRead(gpio_peripheralBus_dataRead),
@@ -250,6 +264,8 @@ module Peripherals (
 		.vga_hsync(vga_hsync),
 		.probe_blink(probe_blink));
 
+	wire _unused_irq_in = irq_in;
+
 	always @(*) begin
 		case (1'b1)
 			uart_requestOutput: peripheralBus_dataRead = uart_peripheralBus_dataRead;
@@ -259,6 +275,11 @@ module Peripherals (
 			default: 			peripheralBus_dataRead = ~32'b0;
 		endcase
 	end
+
+	assign peripheralBus_busy = pwm_peripheralBus_busy |
+								uart_peripheralBus_busy |
+								spi_peripheralBus_busy |
+								gpio_peripheralBus_busy;
 
 	assign peripheral_irq = { pwm_irq, uart_irq, gpio_irq };
 

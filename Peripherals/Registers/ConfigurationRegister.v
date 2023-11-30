@@ -35,10 +35,10 @@ module ConfigurationRegister #(
 	wire[WIDTH-1:0] maskedWriteData = (peripheralBus_dataWrite[WIDTH-1:0] & dataMask[WIDTH-1:0]) | (registerValue & ~dataMask[WIDTH-1:0]);
 
 	generate
-		if (WIDTH < 32) wire _unused_peripheralBus_dataWrite = &{ 1'b0, peripheralBus_dataWrite[31:WIDTH], 1'b0 };
+		if (WIDTH < 32) wire[32-WIDTH-1:0] _unused_zeroPadding = peripheralBus_dataWrite[31:WIDTH];
 	endgenerate
 
-	wire registerSelect = enable && ( peripheralBus_address == ADDRESS);
+	wire registerSelect = enable && (peripheralBus_address == ADDRESS[11:0]);
 	wire we = registerSelect && peripheralBus_we && !peripheralBus_oe;
 	wire oe = registerSelect && peripheralBus_oe && !peripheralBus_we;
 

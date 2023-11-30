@@ -17,7 +17,7 @@ module GPIODevice #(
 		output wire[31:0] peripheralBus_dataRead,
 		input wire[31:0] peripheralBus_dataWrite,
 		output wire requestOutput,
-		
+
 		// GPIO
 		input wire[IO_COUNT-1:0] gpio_input,
 		output wire[IO_COUNT-1:0] gpio_output,
@@ -76,25 +76,25 @@ module GPIODevice #(
 	// Input data register
 	wire[31:0] inputRegisterOutputData;
 	wire inputRegisterOutputRequest;
-	wire inputRegisterBusBusy_nc;
-	wire[IO_COUNT-1:0] inputRegisterWriteData_nc;
-	wire inputRegisterWriteDataEnable_nc;
-	wire inputRegisterReadDataEnable_nc;
+	wire _unused_inputRegisterBusBusy;
+	wire[IO_COUNT-1:0] _unused_inputRegisterWriteData;
+	wire _unused_inputRegisterWriteDataEnable;
+	wire _unused_inputRegisterReadDataEnable;
 	DataRegister #(.WIDTH(IO_COUNT), .ADDRESS(12'h020)) inputRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(inputRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_inputRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(inputRegisterOutputData),
 		.requestOutput(inputRegisterOutputRequest),
-		.writeData(inputRegisterWriteData_nc),
-		.writeData_en(inputRegisterWriteDataEnable_nc),
+		.writeData(_unused_inputRegisterWriteData),
+		.writeData_en(_unused_inputRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(inputBuffered),
-		.readData_en(inputRegisterReadDataEnable_nc),
+		.readData_en(_unused_inputRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	// IRQ register: Default 0x0
@@ -121,7 +121,7 @@ module GPIODevice #(
 									irqEnableRegisterOutputRequest ? irqEnableRegisterOutputData :
 								   								     ~32'b0;
 	assign peripheralBus_busy = 1'b0;
-	
+
 
 	wire[IO_COUNT-1:0] pinIRQ = irqEnable & gpio_oe & inputBuffered;
 

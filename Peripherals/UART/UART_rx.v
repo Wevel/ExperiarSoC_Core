@@ -29,13 +29,13 @@ module UART_rx
 
 	always @(posedge clk) begin
 		if (rst) begin
-			state = STATE_IDLE;
-			delayCounter = {CLOCK_SCALE_BITS{1'b0}};
-			bitCounter = 3'b0;
-			savedData = 8'b0;
-			newData = 1'b0;
+			state <= STATE_IDLE;
+			delayCounter <= {CLOCK_SCALE_BITS{1'b0}};
+			bitCounter <= 3'b0;
+			savedData <= 8'b0;
+			newData <= 1'b0;
 		end else begin
-			newData = 1'b0;
+			newData <= 1'b0;
 
 			 /* When a new byte is being received, the input goes low. This is the
 				start bit. When the beginning of this bit is detected we need to wait
@@ -48,38 +48,38 @@ module UART_rx
 				receive the next byte.                                               */
 			case (state)
 				STATE_IDLE: begin
-					bitCounter = 3'b0;
-					delayCounter = {CLOCK_SCALE_BITS{1'b0}};
-					if (!rx) state = STATE_WAIT_HALF;
+					bitCounter <= 3'b0;
+					delayCounter <= {CLOCK_SCALE_BITS{1'b0}};
+					if (!rx) state <= STATE_WAIT_HALF;
 				end
 
 				STATE_WAIT_HALF: begin
-					if (nextDelayCounter == halfBitCounterValue) begin						
-						delayCounter = 0;
-						state = STATE_WAIT_FULL;
+					if (nextDelayCounter == halfBitCounterValue) begin
+						delayCounter <= 0;
+						state <= STATE_WAIT_FULL;
 					end else begin
-						delayCounter = nextDelayCounter;
+						delayCounter <= nextDelayCounter;
 					end
 				end
 
 				STATE_WAIT_FULL: begin
 					if (nextDelayCounter == cyclesPerBit) begin
-						savedData = {rx, savedData[7:1]};
-						delayCounter = 0;
+						savedData <= {rx, savedData[7:1]};
+						delayCounter <= 0;
 						if (bitCounter == 3'h7) begin
-							state = STATE_WAIT_HIGH;
-							newData = 1'b1;
-						end else bitCounter = bitCounter + 1;
+							state <= STATE_WAIT_HIGH;
+							newData <= 1'b1;
+						end else bitCounter <= bitCounter + 1;
 					end else begin
-						delayCounter = nextDelayCounter;
+						delayCounter <= nextDelayCounter;
 					end
 				end
 
 				STATE_WAIT_HIGH: begin
-					 if (rx) state = STATE_IDLE;
+					 if (rx) state <= STATE_IDLE;
 				end
 
-				default: state = STATE_IDLE;				
+				default: state <= STATE_IDLE;
 			endcase
 		end
 	end

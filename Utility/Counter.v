@@ -19,25 +19,25 @@ module Counter #(
 
 	always @(posedge clk) begin
 		if (TOP != 'b0) begin
-			if (rst || (counter[WIDTH + DIV - 1:DIV] == TOP)) counter = 'b0;
+			if (rst || (counter[WIDTH + DIV - 1:DIV] == TOP)) counter <= 'b0;
 			else begin
 				if (!halt) begin
-					if (UP) counter = counter + 1;
-					else counter = counter - 1;
+					if (UP) counter <= counter + 1;
+					else counter <= counter - 1;
 				end
 			end
 		end else begin
 			if (rst) begin
-				counter = 'b0;
+				counter <= 'b0;
 			end else begin
 				if (!halt) begin
-					if (UP) counter = counter + 1;
-					else counter = counter - 1;
+					if (UP) counter <= counter + 1;
+					else counter <= counter - 1;
 				end
 			end
 		end
 
-		value = counter[WIDTH + DIV - 1:DIV];
+		value <= counter[WIDTH + DIV - 1:DIV];
 	end
 
 endmodule

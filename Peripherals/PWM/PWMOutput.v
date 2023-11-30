@@ -5,13 +5,13 @@ module PWMOutput #(
 	)(
 		input wire clk,
 		input wire rst,
-		
+
 		input wire[WIDTH-1:0] compareValue,
 		input wire enable,
 
 		input wire[WIDTH-1:0] counterValue,
 		output wire pwm_out,
-		
+
 		output reg compareRise,
 		output reg compareFall
 	);
@@ -46,10 +46,10 @@ module PWMOutput #(
 			lastState <= 1'b0;
 			compareRise <= 1'b0;
 			compareFall <= 1'b0;
-		end	else begin 
+		end	else begin
 			lastState <= state;
 
-			if (state != state) begin
+			if (state != lastState) begin
 				compareRise <= state;
 				compareFall <= !state;
 			end else begin
@@ -58,7 +58,7 @@ module PWMOutput #(
 			end
 		end
 	end
-	
+
 	assign pwm_out = state;
 
 endmodule

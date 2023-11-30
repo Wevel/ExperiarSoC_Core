@@ -148,7 +148,7 @@ module CSR (
 	// Pointer to configuration data structure
 	wire[31:0] configPointerReadData;
 	wire configPointerRequestOutput;
-	wire[31:0] configPointerValue_nc;
+	wire[31:0] _unused_configPointerValue;
 	CSR_ConfigurationRegister #(.ADDRESS(12'hF15)) mconfigptr(
 		.clk(clk),
 		.rst(rst),
@@ -159,7 +159,7 @@ module CSR (
 		.csrWriteData(csrWriteData),
 		.csrReadData(configPointerReadData),
 		.csrRequestOutput(configPointerRequestOutput),
-		.value(configPointerValue_nc));
+		.value(_unused_configPointerValue));
 
 	// ISA
 	wire[31:0] misaReadData;
@@ -218,7 +218,7 @@ module CSR (
 			timeTimerRequestOutputLower: csrReadData = timeTimerReadDataLower;
 			timeTimerRequestOutputUpper: csrReadData = timeTimerReadDataUpper;
 			instretTimerRequestOutput: csrReadData = instretTimerReadData;
-			
+
 			// Machine info
 			vendorIDRequestOutput: csrReadData = vendorIDReadData;
 			archIDRequestOutput: csrReadData = archIDReadData;

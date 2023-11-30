@@ -36,7 +36,7 @@ module VGA #(
 		// IRQ
 		output wire[1:0] vga_irq
 	);
-	
+
 	// MAX_ROW_WIDTH = 2^ROW_BITS = 64;
 	// MAX_COLUMN_WIDTH = 2^COLUMN_BITS * (MAX_SUB_PIXEL_VALUE+1) = 80;
 
@@ -77,7 +77,7 @@ module VGA #(
 		.peripheralBus_dataRead(configurationRegisterOutputData),
 		.requestOutput(configurationRegisterOutputRequest),
 		.currentValue(configuration));
-	
+
 	wire[3:0] horizontalPixelSize = configuration[3:0];
 	wire[3:0] verticalPixelSize   = configuration[7:4];
 	wire[1:0] drawMode 			  = configuration[9:8];
@@ -229,25 +229,25 @@ module VGA #(
 	reg inHorizontalVisibleArea = 1'b1;
 	wire[31:0] stateRegisterOutputData;
 	wire stateRegisterOutputRequest;
-	wire stateReadDataEnable_nc;
-	wire stateRegisterBusyBusy_nc;
-	wire[4:0] stateRegisterWriteData_nc;
-	wire stateRegisterWriteDataEnable_nc;
+	wire _unused_stateReadDataEnable;
+	wire _unused_stateRegisterBusyBusy;
+	wire[4:0] _unused_stateRegisterWriteData;
+	wire _unused_stateRegisterWriteDataEnable;
 	DataRegister #(.WIDTH(5), .ADDRESS(12'h030)) stateRegister(
 		.enable(configEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(stateRegisterBusyBusy_nc),
+		.peripheralBus_busy(_unused_stateRegisterBusyBusy),
 		.peripheralBus_address(configRegisterAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(stateRegisterOutputData),
 		.requestOutput(stateRegisterOutputRequest),
-		.writeData(stateRegisterWriteData_nc),
-		.writeData_en(stateRegisterWriteDataEnable_nc),
+		.writeData(_unused_stateRegisterWriteData),
+		.writeData_en(_unused_stateRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(stateRegisterBuffered),
-		.readData_en(stateReadDataEnable_nc),
+		.readData_en(_unused_stateReadDataEnable),
 		.readData_busy(1'b0));
 
 	always @(posedge clk) begin
@@ -318,7 +318,7 @@ module VGA #(
 			else if (isEndHorizontalSyncPulse) hsync <= 1'b1;
 		end
 	end
-	
+
 	reg[9:0] verticalCounter;
 	wire isEndVerticalVisibleArea = verticalCounter == verticalVisibleAreaCompare;
 	wire isEndVerticalFrontPorch = verticalCounter == verticalFrontPorchCompare;
@@ -347,7 +347,7 @@ module VGA #(
 
 	// Latch data in from sram and delay sync signals
 	// Data timing
-	// c0: pixel counter increments, sync signal set, and address is set 
+	// c0: pixel counter increments, sync signal set, and address is set
 	// c1: data is valid
 
 	reg fetchPixelData;
@@ -405,12 +405,12 @@ module VGA #(
 		raw_verticalPixelStretchCounter_d = raw_verticalPixelStretchCounter;
 
 		if (rst || !enableOutput || !inVerticalVisibleArea) begin
-			raw_directPixelCounterVertical_d = 18'b0;		
+			raw_directPixelCounterVertical_d = 18'b0;
 			raw_subPixelCounter_d = 3'b0;
 			raw_horizontalPixelCounter_d = 9'b0;
 			raw_horizontalPixelStretchCounter_d = 4'b0;
 			raw_verticalPixelCounter_d = 10'b0;
-			raw_verticalPixelStretchCounter_d = 4'b0;	
+			raw_verticalPixelStretchCounter_d = 4'b0;
 		end else begin
 			if (inHorizontalVisibleArea) begin
 				if (raw_horizontalPixelStretchNextPixel) begin
@@ -517,7 +517,7 @@ module VGA #(
 		end
 	end
 
-	reg[5:0] raw_currentPixel;	
+	reg[5:0] raw_currentPixel;
 	always @(*) begin
 		case (raw_subPixelCounter_buffered)
 			4'h0: raw_currentPixel = currentPixelData[5:0];

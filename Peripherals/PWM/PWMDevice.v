@@ -19,7 +19,7 @@ module PWMDevice #(
 		output reg[31:0] peripheralBus_dataRead,
 		input wire[31:0] peripheralBus_dataWrite,
 		output wire requestOutput,
-		
+
 		// PWM output
 		output wire[OUTPUTS-1:0] pwm_en,
 		output wire[OUTPUTS-1:0] pwm_out,
@@ -36,9 +36,11 @@ module PWMDevice #(
 	wire[OUTPUTS-1:0] fallInterruptEnable;
 
 	// Counter control
-	reg[CLOCK_WIDTH + WIDTH - 1:0] baseCounter = 'b0;
-	wire[CLOCK_WIDTH + WIDTH - 1:0] nextCounter = baseCounter + 1;
-	wire[WIDTH-1:0] counterValue = baseCounter >> clockScale;
+	reg[CLOCK_WIDTH+WIDTH-1:0] baseCounter = 'b0;
+	wire[CLOCK_WIDTH+WIDTH-1:0] nextCounter = baseCounter + 1;
+	wire[CLOCK_WIDTH+WIDTH-1:0] scaledCounter = baseCounter >> clockScale;
+	wire[CLOCK_WIDTH-1:0] _unused_scaledCounter = scaledCounter[CLOCK_WIDTH+WIDTH-1:WIDTH];
+	wire[WIDTH-1:0] counterValue = scaledCounter[WIDTH-1:0];
 
 	// Device select
 	wire[11:0] localAddress;
@@ -98,16 +100,16 @@ module PWMDevice #(
 	localparam DEFAULT_TOP_COMPARE_VALUE = 'h1387;
 	wire[31:0] topCompareRegisterOutputData;
 	wire topCompareRegisterOutputRequest;
-	wire topCompareRegisterBusBusy_nc;
+	wire _unused_topCompareRegisterBusBusy;
 	wire[WIDTH-1:0] topCompareRegisterWriteData;
 	wire topCompareRegisterWriteDataEnable;
-	wire topCompareRegisterReadDataEnable_nc;
+	wire _unused_topCompareRegisterReadDataEnable;
 	reg[WIDTH-1:0] topCompare;
 	DataRegister #(.WIDTH(WIDTH), .ADDRESS(12'h004)) topCompareRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(topCompareRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_topCompareRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
@@ -117,7 +119,7 @@ module PWMDevice #(
 		.writeData_en(topCompareRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(topCompare),
-		.readData_en(topCompareRegisterReadDataEnable_nc),
+		.readData_en(_unused_topCompareRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	// Current data register (for .WIDTH(16), .OUTPUTS(4))
@@ -127,25 +129,25 @@ module PWMDevice #(
 	wire[OUTPUTS-1:0] outputs;
 	wire[31:0] dataRegisterOutputData;
 	wire dataRegisterOutputRequest;
-	wire dataRegisterBusBusy_nc;
-	wire[WIDTH+OUTPUTS-1:0] dataRegisterWriteData_nc;
-	wire dataRegisterWriteDataEnable_nc;
-	wire dataRegisterReadDataEnable_nc;
+	wire _unused_dataRegisterBusBusy;
+	wire[WIDTH+OUTPUTS-1:0] _unused_dataRegisterWriteData;
+	wire _unused_dataRegisterWriteDataEnable;
+	wire _unused_dataRegisterReadDataEnable;
 	DataRegister #(.WIDTH(WIDTH + OUTPUTS), .ADDRESS(12'h008)) dataRegister(
 		.enable(deviceEnable),
 		.peripheralBus_we(peripheralBus_we),
 		.peripheralBus_oe(peripheralBus_oe),
-		.peripheralBus_busy(dataRegisterBusBusy_nc),
+		.peripheralBus_busy(_unused_dataRegisterBusBusy),
 		.peripheralBus_address(localAddress),
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.peripheralBus_dataRead(dataRegisterOutputData),
 		.requestOutput(dataRegisterOutputRequest),
-		.writeData(dataRegisterWriteData_nc),
-		.writeData_en(dataRegisterWriteDataEnable_nc),
+		.writeData(_unused_dataRegisterWriteData),
+		.writeData_en(_unused_dataRegisterWriteDataEnable),
 		.writeData_busy(1'b0),
 		.readData(dataRegisterBuffered),
-		.readData_en(dataRegisterReadDataEnable_nc),
+		.readData_en(_unused_dataRegisterReadDataEnable),
 		.readData_busy(1'b0));
 
 	always @(posedge clk) begin
@@ -232,7 +234,7 @@ module PWMDevice #(
 	assign pwm_en = compareEnable & outputEnable;
 	assign pwm_out = outputs;
 
-	wire[OUTPUTS-1:0] comparatorIRQ = (riseInterruptEnable & compareRise) || (fallInterruptEnable & compareFall);
+	wire[OUTPUTS-1:0] comparatorIRQ = (riseInterruptEnable & compareRise) | (fallInterruptEnable & compareFall);
 	assign pwm_irq = |comparatorIRQ;
 
 endmodule

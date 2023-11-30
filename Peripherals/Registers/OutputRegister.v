@@ -42,15 +42,17 @@ module OutputRegister #(
 	};
 
 	reg[WIDTH-1:0] registerValue;
+	wire[WIDTH-1:0] maskedDataWrite = peripheralBus_dataWrite[WIDTH-1:0] & dataMask[WIDTH-1:0];
+	wire[WIDTH-1:0] writeData = maskedDataWrite | (registerValue & ~dataMask[WIDTH-1:0]);
+	wire[WIDTH-1:0] setData = registerValue | maskedDataWrite;
+	wire[WIDTH-1:0] clearData = registerValue & ~maskedDataWrite;
+	wire[WIDTH-1:0] toggleData = registerValue ^ maskedDataWrite;
 
-	wire[31:0] maskedDataWrite = peripheralBus_dataWrite & dataMask;
+	generate
+		if (WIDTH < 32) wire[32-WIDTH-1:0] _unused_zeroPadding = peripheralBus_dataWrite[31:WIDTH];
+	endgenerate
 
-	wire[31:0] writeData = maskedDataWrite | (registerValue & ~dataMask);
-	wire[31:0] setData = registerValue | maskedDataWrite;
-	wire[31:0] clearData = registerValue & ~maskedDataWrite;
-	wire[31:0] toggleData = registerValue ^ maskedDataWrite;
-
-	wire registerSelect = enable && (peripheralBus_address[11:4] == ADDRESS);
+	wire registerSelect = enable && (peripheralBus_address[11:4] == ADDRESS[7:0]);
 	wire we = registerSelect && peripheralBus_we && !peripheralBus_oe;
 	wire oe = registerSelect && peripheralBus_oe && !peripheralBus_we;
 
@@ -59,7 +61,7 @@ module OutputRegister #(
 			registerValue <= DEFAULT;
 		end else begin
 			if (we) begin
-				if (enableWrite) registerValue <= writeData[WIDTH-1:0];
+				if (enableWrite) registerValue <= writeData;
 				else if (enableSet) registerValue <= setData;
 				else if (enableClear) registerValue <= clearData;
 				else if (enableToggle) registerValue <= toggleData;
