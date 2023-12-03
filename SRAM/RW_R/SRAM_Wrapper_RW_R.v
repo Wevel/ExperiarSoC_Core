@@ -5,24 +5,8 @@
 `define PDK_SKY130 		2
 `define PDK_GF180 		3
 
-`ifdef USE_DFF_SRAM
-	`define SRAM_PDK `PDK_DFF
-	`include "SRAMWrapper_DFF.v"
-`elsif USE_FPGA_SRAM
-	`define SRAM_PDK `PDK_FPGA
-	`include "SRAMWrapper_FPGA.v"
-`elsif USE_SKY130_SRAM
-	`define SRAM_PDK `PDK_SKY130
-	`include "SRAMWrapper_SKY130.v"
-`elsif USE_GF180_SRAM
-	`define SRAM_PDK `PDK_GF180
-	`include "SRAMWrapper_GF180.v"
-`else
-	`error "Unknown PDK"
-`endif
-
-
-module SRAMWrapper #(
+module SRAM_Wrapper_RW_R #(
+		parameter SRAM_PDK = `PDK_DFF,
 		parameter BYTE_COUNT = 4,
 		parameter ADDRESS_SIZE = 9
 	)(
@@ -48,14 +32,14 @@ module SRAMWrapper #(
 		output wire[WORD_SIZE-1:0] secondaryDataRead
 	);
 
-	localparam WORD_SIZE = 4 * BYTE_COUNT;
+	localparam WORD_SIZE = 8 * BYTE_COUNT;
 
 generate
 
-	case (`SRAM_PDK)
+	case (SRAM_PDK)
 		`PDK_DFF: begin
-			
-			SRAMWrapper_DFF #(
+
+			SRAM_Wrapper_DFF_RW_R  #(
 				.BYTE_COUNT(BYTE_COUNT),
 				.ADDRESS_SIZE(ADDRESS_SIZE)
 			) sramWrapper (
@@ -78,8 +62,8 @@ generate
 		end
 
 		`PDK_FPGA: begin
-			
-			SRAMWrapper_FPGA #(
+
+			SRAM_Wrapper_FPGA_RW_R  #(
 				.BYTE_COUNT(BYTE_COUNT),
 				.ADDRESS_SIZE(ADDRESS_SIZE)
 			) sramWrapper (
@@ -98,8 +82,8 @@ generate
 		end
 
 		`PDK_SKY130: begin
-					
-			SRAMWrapper_SKY130 #(
+
+			SRAM_Wrapper_SKY130_RW_R  #(
 				.BYTE_COUNT(BYTE_COUNT),
 				.ADDRESS_SIZE(ADDRESS_SIZE)
 			) sramWrapper (
@@ -118,35 +102,38 @@ generate
 				.secondarySelect(secondarySelect),
 				.secondaryAddress(secondaryAddress),
 				.secondaryDataRead(secondaryDataRead));
-				
+
 		end
 
 		`PDK_GF180: begin
-						
-			SRAMWrapper_GF180 #(
-				.BYTE_COUNT(BYTE_COUNT),
-				.ADDRESS_SIZE(ADDRESS_SIZE)
-			) sramWrapper (
-`ifdef USE_POWER_PINS
-				.VPWR(VPWR),
-				.VGND(VGND),
-`endif
-				.clk(clk),
-				.rst(rst),
-				.primarySelect(primarySelect),
-				.primaryWriteEnable(primaryWriteEnable),
-				.primaryWriteMask(primaryWriteMask),
-				.primaryAddress(primaryAddress),
-				.primaryDataWrite(primaryDataWrite),
-				.primaryDataRead(primaryDataRead),
-				.secondarySelect(secondarySelect),
-				.secondaryAddress(secondaryAddress),
-				.secondaryDataRead(secondaryDataRead));
-				
+
+			// TODO: RW_R for GF180
+// 			SRAM_Wrapper_GF180_RW_R  #(
+// 				.BYTE_COUNT(BYTE_COUNT),
+// 				.ADDRESS_SIZE(ADDRESS_SIZE)
+// 			) sramWrapper (
+// `ifdef USE_POWER_PINS
+// 				.VPWR(VPWR),
+// 				.VGND(VGND),
+// `endif
+// 				.clk(clk),
+// 				.rst(rst),
+// 				.primarySelect(primarySelect),
+// 				.primaryWriteEnable(primaryWriteEnable),
+// 				.primaryWriteMask(primaryWriteMask),
+// 				.primaryAddress(primaryAddress),
+// 				.primaryDataWrite(primaryDataWrite),
+// 				.primaryDataRead(primaryDataRead),
+// 				.secondarySelect(secondarySelect),
+// 				.secondaryAddress(secondaryAddress),
+// 				.secondaryDataRead(secondaryDataRead));
+
 		end
 
 		DEFAULT: begin
-			//$display("Unknown PDK", `PDK);
+`ifdef SIM
+			$display("Unknown PDK", `PDK);
+`endif
 		end
 	endcase
 

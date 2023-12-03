@@ -1,6 +1,6 @@
 `default_nettype none
 
-module SRAMWrapper_SKY130 #(
+module SRAM_Wrapper_SKY130_RW #(
 		parameter BYTE_COUNT = 4,
 		parameter ADDRESS_SIZE = 9
 	)(
@@ -18,22 +18,19 @@ module SRAMWrapper_SKY130 #(
 		input wire[BYTE_COUNT-1:0] primaryWriteMask,
 		input wire[ADDRESS_SIZE-1:0] primaryAddress,
 		input wire[WORD_SIZE-1:0] primaryDataWrite,
-		output wire[WORD_SIZE-1:0] primaryDataRead,
-
-		// Secondary R port
-		input wire secondarySelect,
-		input wire[ADDRESS_SIZE-1:0] secondaryAddress,
-		output wire[WORD_SIZE-1:0] secondaryDataRead
+		output wire[WORD_SIZE-1:0] primaryDataRead
 	);
 
-	localparam WORD_SIZE = 4 * BYTE_COUNT;
+	localparam WORD_SIZE = 8 * BYTE_COUNT;
 
 generate
 
 	if (BYTE_COUNT == 4) begin
 
 		if (ADDRESS_SIZE == 9) begin
-			
+
+			wire[WORD_SIZE-1:0] _unused_secondaryDataRead;
+
 			// Only one SRAM is needed for this configuration
 			sky130_sram_2kbyte_1rw1r_32x512_8 sram(
 	`ifdef USE_POWER_PINS
@@ -48,18 +45,17 @@ generate
 				.din0(primaryDataWrite),
 				.dout0(primaryDataRead),
 				.clk1(clk),
-				.csb1(~secondarySelect),
-				.addr1(secondaryAddress),
-				.dout1(secondaryDataRead)
+				.csb1(1'b1),
+				.addr1({ADDRESS_SIZE{1'b0}}),
+				.dout1(_unused_secondaryDataRead)
 			);
 
 		end else if (ADDRESS_SIZE > 9) begin
-			
+
 			// Recursively instantiate SRAMWrappers to create a memory with the desired address size
 			wire[(2*WORD_SIZE)-1:0] primaryDataReadFull;
-			wire[(2*WORD_SIZE)-1:0] secondaryDataReadFull;
 
-			SRAMWrapper_SKY130 #(
+			SRAM_Wrapper_SKY130_RW #(
 				.BYTE_COUNT(BYTE_COUNT),
 				.ADDRESS_SIZE(ADDRESS_SIZE-1)
 			) sramWrapperHigh (
@@ -74,12 +70,9 @@ generate
 				.primaryWriteMask(primaryWriteMask),
 				.primaryAddress(primaryAddress[ADDRESS_SIZE-2:0]),
 				.primaryDataWrite(primaryDataWrite),
-				.primaryDataRead(primaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE]),
-				.secondarySelect(secondarySelect && secondaryAddress[ADDRESS_SIZE-1]), // MSB of secondary address
-				.secondaryAddress(secondaryAddress[ADDRESS_SIZE-2:0]),
-				.secondaryDataRead(secondaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE]));
+				.primaryDataRead(primaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE]));
 
-			SRAMWrapper_SKY130 #(
+			SRAM_Wrapper_SKY130_RW #(
 				.BYTE_COUNT(BYTE_COUNT),
 				.ADDRESS_SIZE(ADDRESS_SIZE-1)
 			) sramWrapperLow (
@@ -94,19 +87,21 @@ generate
 				.primaryWriteMask(primaryWriteMask),
 				.primaryAddress(primaryAddress[ADDRESS_SIZE-2:0]),
 				.primaryDataWrite(primaryDataWrite),
-				.primaryDataRead(primaryDataReadFull[WORD_SIZE-1:0]),
-				.secondarySelect(secondarySelect && !secondaryAddress[ADDRESS_SIZE-1]), // MSB of secondary address
-				.secondaryAddress(secondaryAddress[ADDRESS_SIZE-2:0]),
-				.secondaryDataRead(secondaryDataReadFull[WORD_SIZE-1:0]));
+				.primaryDataRead(primaryDataReadFull[WORD_SIZE-1:0]));
 
 				assign primaryDataRead = primaryAddress[ADDRESS_SIZE-1] ? primaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE] : primaryDataReadFull[WORD_SIZE-1:0];
-				assign secondaryDataRead = secondaryAddress[ADDRESS_SIZE-1] ? secondaryDataReadFull[(2*WORD_SIZE)-1:WORD_SIZE] : secondaryDataReadFull[WORD_SIZE-1:0];
 
 		end else begin
+`ifdef SIM
 			$display("Unsupported ADDRESS_SIZE", ADDRESS_SIZE);
+`endif
 		end
-		
-	end else $display("Unsupported BYTE_COUNT", BYTE_COUNT);
+
+	end else begin
+`ifdef SIM
+		$display("Unsupported BYTE_COUNT", BYTE_COUNT);
+`endif
+	end
 
 endgenerate
 

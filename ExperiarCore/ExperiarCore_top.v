@@ -1,9 +1,9 @@
 `default_nettype none
 
-module ExperiarCore (
+module ExperiarCore_top (
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
 		input wire wb_clk_i,
@@ -23,7 +23,7 @@ module ExperiarCore (
 		// Interrupts
 		input wire[15:0] irq,
 
-		// Wishbone master interface from core
+		// Wishbone controller interface from core
 		output wire core_wb_cyc_o,
 		output wire core_wb_stb_o,
 		output wire core_wb_we_o,
@@ -35,7 +35,7 @@ module ExperiarCore (
 		input wire core_wb_error_i,
 		input wire[31:0] core_wb_data_i,
 
-		// Wishbone slave interface to sram
+		// Wishbone device interface to sram
 		input wire localMemory_wb_cyc_i,
 		input wire localMemory_wb_stb_i,
 		input wire localMemory_wb_we_i,
@@ -47,20 +47,13 @@ module ExperiarCore (
 		output wire localMemory_wb_error_o,
 		output wire[31:0] localMemory_wb_data_o,
 
-		// SRAM rw port
-		output wire clk0, // Port clock
-		output wire[1:0] csb0, // active low chip select
-		output wire web0, // active low write control
-		output wire[3:0] wmask0, // write mask
-		output wire[SRAM_ADDRESS_SIZE-1:0] addr0,
-		output wire[31:0] din0,
-		input  wire[63:0] dout0,
-
-		// SRAM r port
-		output wire clk1,
-		output wire[1:0] csb1,
-		output wire[SRAM_ADDRESS_SIZE-1:0] addr1,
-		input  wire[63:0] dout1,
+		// Controller SRAM rw port
+		output wire sram_primarySelect,
+		output wire sram_primaryWriteEnable,
+		output wire[3:0] sram_primaryWriteMask,
+		output wire[SRAM_ADDRESS_SIZE-1:0] sram_primaryAddress,
+		output wire[31:0] sram_primaryDataWrite,
+		input wire[31:0] sram_primaryDataRead,
 
 		// Logic probes
 		output wire probe_state,
@@ -68,7 +61,7 @@ module ExperiarCore (
 		output wire[31:0] probe_programCounter,
 		output wire[4:0] probe_jtagInstruction
 	);
-	
+
 	localparam SRAM_ADDRESS_SIZE = 9;
 
 	// Management
@@ -143,6 +136,7 @@ module ExperiarCore (
 	wire wbLocalMemoryBusy;
 
 	// Core management
+	wire[31:0] resetProgramCounterAddress;
 	wire management_run;
 	wire management_interruptEnable;
 	wire management_writeEnable;
@@ -161,7 +155,7 @@ module ExperiarCore (
 	wire wb_management_enable;
 	wire wb_management_writeEnable;
 	wire[3:0] wb_management_byteSelect;
-	wire[19:0] wb_management_address;
+	wire[23:0] wb_management_address;
 	wire[31:0] wb_management_writeData;
 	wire[31:0] wb_management_readData;
 	wire wb_management_busy;
@@ -188,6 +182,7 @@ module ExperiarCore (
 	CoreManagement coreManagement(
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
+		.resetProgramCounterAddress(resetProgramCounterAddress),
 		.management_run(management_run),
 		.management_interruptEnable(management_interruptEnable),
 		.management_writeEnable(management_writeEnable),
@@ -216,11 +211,12 @@ module ExperiarCore (
 	// Core
 	RV32ICore core(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
+		.resetProgramCounterAddress(resetProgramCounterAddress),
 		.instruction_memoryAddress(coreInstructionMemoryAddress),
 		.instruction_memoryEnable(coreInstructionMemoryEnable),
 		.instruction_memoryDataRead(coreInstructionMemoryDataRead),
@@ -282,8 +278,8 @@ module ExperiarCore (
 		.wbDataRead(coreWBDataRead),
 		.wbBusy(coreWBBusy));
 
-	LocalMemoryInterface #(
-		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE+1)
+	LocalMemoryInterface_RW #(
+		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE)
 	) localMemoryInterface (
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
@@ -301,17 +297,12 @@ module ExperiarCore (
 		.secondaryDataWrite(wbLocalMemoryDataWrite),
 		.secondaryDataRead(wbLocalMemoryDataRead),
 		.secondaryBusy(wbLocalMemoryBusy),
-		.clk0(clk0),
-		.csb0(csb0),
-		.web0(web0),
-		.wmask0(wmask0),
-		.addr0(addr0),
-		.din0(din0),
-		.dout0(dout0),
-		.clk1(clk1),
-		.csb1(csb1),
-		.addr1(addr1),
-		.dout1(dout1));
+		.sram_primarySelect(sram_primarySelect),
+		.sram_primaryWriteEnable(sram_primaryWriteEnable),
+		.sram_primaryWriteMask(sram_primaryWriteMask),
+		.sram_primaryAddress(sram_primaryAddress),
+		.sram_primaryDataWrite(sram_primaryDataWrite),
+		.sram_primaryDataRead(sram_primaryDataRead));
 
 	Core_WBInterface coreWBInterface(
 		.wb_clk_i(wb_clk_i),

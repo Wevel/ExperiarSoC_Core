@@ -35,7 +35,7 @@ module PipeStore (
 		output wire isFence,
 		output wire isRET
 	);
-	
+
 	// Pipe control
 	PipeStage pipeStage(
 		.clk(clk),
@@ -48,32 +48,32 @@ module PipeStore (
 		.lastInstruction(lastInstruction));
 
 	// Instruction decode
-	wire[6:0] opcode;
-	wire[4:0] rdIndex; wire[4:0] rs1Index; wire[4:0] rs2Index;
-	wire[2:0] funct3; wire[6:0] funct7;
-	wire isCompressed;
-	wire isLUI; wire isAUIPC; wire isJAL; wire isJALR; wire isBranch; wire isLoad; wire isStore;
-	wire isALUImmBase; wire isALUImmNormal; wire isALUImmShift; wire isALUImm; wire isALU;
-	wire isSystem; 
-	wire isCSR; wire isCSRIMM; wire isCSRRW; wire isCSRRS; wire isCSRRC; 
-	wire isECALL; wire isEBREAK;
+	wire[6:0] _unused_opcode;
+	wire[4:0] rdIndex; wire[4:0] _unused_rs1Index; wire[4:0] _unused_rs2Index;
+	wire[2:0] funct3; wire[6:0] _unused_funct7;
+	wire _unused_isCompressed;
+	wire isLUI; wire isAUIPC; wire isJAL; wire isJALR; wire _unused_isBranch; wire isLoad; wire isStore;
+	wire _unused_isALUImmBase; wire _unused_isALUImmNormal; wire _unused_isALUImmShift; wire isALUImm; wire isALU;
+	wire _unused_isSystem;
+	wire isCSR; wire _unused_isCSRIMM; wire isCSRRW; wire _unused_isCSRRS; wire _unused_isCSRRC;
+	wire _unused_isECALL; wire _unused_isEBREAK;
 	InstructionDecode decode(
 		.currentInstruction(currentInstruction),
 		.isNOP(pipeStall),
-		.opcode(opcode),
-		.rdIndex(rdIndex), .rs1Index(rs1Index), .rs2Index(rs2Index),
-		.funct3(funct3), .funct7(funct7),
-		.isCompressed(isCompressed),
-		.isLUI(isLUI), .isAUIPC(isAUIPC), .isJAL(isJAL), .isJALR(isJALR), .isBranch(isBranch), .isLoad(isLoad), .isStore(isStore),
-		.isALUImmBase(isALUImmBase), .isALUImmNormal(isALUImmNormal), .isALUImmShift(isALUImmShift), .isALUImm(isALUImm), .isALU(isALU),
-		.isFence(isFence), .isSystem(isSystem),
-		.isCSR(isCSR), .isCSRIMM(isCSRIMM), .isCSRRW(isCSRRW), .isCSRRS(isCSRRS), .isCSRRC(isCSRRC),
-		.isECALL(isECALL), .isEBREAK(isEBREAK), .isRET(isRET),
+		.opcode(_unused_opcode),
+		.rdIndex(rdIndex), .rs1Index(_unused_rs1Index), .rs2Index(_unused_rs2Index),
+		.funct3(funct3), .funct7(_unused_funct7),
+		.isCompressed(_unused_isCompressed),
+		.isLUI(isLUI), .isAUIPC(isAUIPC), .isJAL(isJAL), .isJALR(isJALR), .isBranch(_unused_isBranch), .isLoad(isLoad), .isStore(isStore),
+		.isALUImmBase(_unused_isALUImmBase), .isALUImmNormal(_unused_isALUImmNormal), .isALUImmShift(_unused_isALUImmShift), .isALUImm(isALUImm), .isALU(isALU),
+		.isFence(isFence), .isSystem(_unused_isSystem),
+		.isCSR(isCSR), .isCSRIMM(_unused_isCSRIMM), .isCSRRW(isCSRRW), .isCSRRS(_unused_isCSRRS), .isCSRRC(_unused_isCSRRC),
+		.isECALL(_unused_isECALL), .isEBREAK(_unused_isEBREAK), .isRET(isRET),
 		.invalidInstruction(invalidInstruction)
 	);
 
 	// Memory connections
-	wire[31:0] targetMemoryAddress = aluResultData;
+	wire[1:0] targetMemoryAddressByte = aluResultData[1:0];
 	wire loadSigned    = (funct3 == 3'b000) || (funct3 == 3'b001);
 	wire loadStoreByte = funct3[1:0] == 2'b00;
 	wire loadStoreHalf = funct3[1:0] == 2'b01;
@@ -81,12 +81,12 @@ module PipeStore (
 	reg[3:0] baseByteMask;
 	always @(*) begin
 		if (isLoad || isStore) begin
-			if (loadStoreWord) baseByteMask <= 4'b1111;
-			else if (loadStoreHalf) baseByteMask <= 4'b0011;
-			else if (loadStoreByte) baseByteMask <= 4'b0001;
-			else baseByteMask <= 4'b0000;
+			if (loadStoreWord) baseByteMask = 4'b1111;
+			else if (loadStoreHalf) baseByteMask = 4'b0011;
+			else if (loadStoreByte) baseByteMask = 4'b0001;
+			else baseByteMask = 4'b0000;
 		end else begin
-			baseByteMask <= 4'b0000;
+			baseByteMask = 4'b0000;
 		end
 	end
 
@@ -94,14 +94,14 @@ module PipeStore (
 	always @(*) begin
 		if (loadSigned) begin
 			if (loadStoreByte) begin
-				case (targetMemoryAddress[1:0])
+				case (targetMemoryAddressByte)
 					2'b00: signExtend = memoryDataRead[7];
 					2'b01: signExtend = memoryDataRead[15];
 					2'b10: signExtend = memoryDataRead[23];
 					2'b11: signExtend = memoryDataRead[31];
 				endcase
 			end else if (loadStoreHalf) begin
-				case (targetMemoryAddress[1:0])
+				case (targetMemoryAddressByte)
 					2'b00: signExtend = memoryDataRead[15];
 					2'b01: signExtend = memoryDataRead[23];
 					2'b10: signExtend = memoryDataRead[31];
@@ -117,14 +117,14 @@ module PipeStore (
 
 	wire[7:0] signExtendByte = signExtend ? 8'hFF : 8'h00;
 
-	wire[6:0] loadStoreByteMask = {3'b0, baseByteMask} << targetMemoryAddress[1:0];
+	wire[6:0] loadStoreByteMask = {3'b0, baseByteMask} << targetMemoryAddressByte;
 	wire loadStoreByteMaskValid = |(loadStoreByteMask[3:0]);
 	wire addressMissaligned = |loadStoreByteMask[6:4];
 	wire shouldLoad  = loadStoreByteMaskValid && !addressMissaligned && isLoad;
 
 	reg[31:0] dataIn;
 	always @(*) begin
-		case (targetMemoryAddress[1:0])
+		case (targetMemoryAddressByte)
 			2'b00: dataIn = {
 					loadStoreByteMask[3] ? memoryDataRead[31:24] : signExtendByte,
 					loadStoreByteMask[2] ? memoryDataRead[23:16] : signExtendByte,
@@ -174,7 +174,7 @@ module PipeStore (
 
 	// Memory control
 	assign expectingLoad = shouldLoad;
-	
+
 	// Register write control
 	assign registerWriteAddress = rdIndex;
 	assign registerWriteData = integerRegisterWriteData;

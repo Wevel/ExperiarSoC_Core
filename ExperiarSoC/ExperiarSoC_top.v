@@ -2,16 +2,22 @@
 
 `include "../defines.v"
 
-module ExperiarSoC_top (
+module ExperiarSoC_top #(
+		parameter CORE_COUNT = 1,
+		parameter CACHED_MEMORY_COUNT = 1,
+		parameter CORE_SRAM_ADDRESS_SIZE = 9,
+		parameter CACHE_SRAM_ADDRESS_SIZE = 9,
+		parameter VIDEO_SRAM_ADDRESS_SIZE = 9
+	)(
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
 		input wire wb_clk_i,
 		input wire wb_rst_i,
 
-		// Caravel wishbone master
+		// Caravel wishbone controller
 		input wire caravel_wb_cyc_o,
 		input wire caravel_wb_stb_o,
 		input wire caravel_wb_we_o,
@@ -45,8 +51,6 @@ module ExperiarSoC_top (
 		input wire[3:0] versionID
 	);
 
-	localparam SRAM_ADDRESS_SIZE = 9;
-
 	// JTAG
 	wire jtag_tck;
 	wire jtag_tms;
@@ -70,9 +74,9 @@ module ExperiarSoC_top (
 	wire[15:0] irq;
 
 	// Wishbone wires
-	// Master 0: Caravel
+	// Controller 0: Caravel
 
-	// Master 1: Core 0
+	// Controller 1: Core 0
 	wire core0_wb_cyc_o;
 	wire core0_wb_stb_o;
 	wire core0_wb_we_o;
@@ -84,7 +88,7 @@ module ExperiarSoC_top (
 	wire core0_wb_error_i;
 	wire[31:0] core0_wb_data_i;
 
-	// Master 2: Core 1
+	// Controller 2: Core 1
 	wire core1_wb_cyc_o;
 	wire core1_wb_stb_o;
 	wire core1_wb_we_o;
@@ -96,7 +100,7 @@ module ExperiarSoC_top (
 	wire core1_wb_error_i;
 	wire[31:0] core1_wb_data_i;
 
-	// Master 3: dma
+	// Controller 3: dma
 	// wire dma_wb_cyc_o = 1'b0;
 	// wire dma_wb_stb_o = 1'b0;
 	// wire dma_wb_we_o = 1'b0;
@@ -108,7 +112,7 @@ module ExperiarSoC_top (
 	// wire dma_wb_error_i;
 	// wire[31:0] dma_wb_data_i;
 
-	// Slave 0
+	// Device 0
 	wire core0Memory_wb_cyc_i;
 	wire core0Memory_wb_stb_i;
 	wire core0Memory_wb_we_i;
@@ -120,7 +124,7 @@ module ExperiarSoC_top (
 	wire core0Memory_wb_error_o;
 	wire[31:0] core0Memory_wb_data_o;
 
-	// Slave 1
+	// Device 1
 	wire core1Memory_wb_cyc_i;
 	wire core1Memory_wb_stb_i;
 	wire core1Memory_wb_we_i;
@@ -132,7 +136,7 @@ module ExperiarSoC_top (
 	wire core1Memory_wb_error_o;
 	wire[31:0] core1Memory_wb_data_o;
 
-	// Slave 2
+	// Device 2
 	wire videoMemory_wb_cyc_i;
 	wire videoMemory_wb_stb_i;
 	wire videoMemory_wb_we_i;
@@ -144,7 +148,7 @@ module ExperiarSoC_top (
 	wire videoMemory_wb_error_o;
 	wire[31:0] videoMemory_wb_data_o;
 
-	// Slave 3
+	// Device 3
 	wire peripherals_wb_cyc_i;
 	wire peripherals_wb_stb_i;
 	wire peripherals_wb_we_i;
@@ -156,7 +160,7 @@ module ExperiarSoC_top (
 	wire peripherals_wb_error_o;
 	wire[31:0] peripherals_wb_data_o;
 
-	// Slave 4/5
+	// Device 4/5
 	wire[1:0] cachedMemory_wb_cyc_i;
 	wire[1:0] cachedMemory_wb_stb_i;
 	wire[1:0] cachedMemory_wb_we_i;
@@ -168,29 +172,29 @@ module ExperiarSoC_top (
 	wire[1:0] cachedMemory_wb_error_o;
 	wire[31:0] cachedMemory_wb_data_o [0:1];
 
-	wire[3:0] probe_master0_currentSlave;
-	wire[3:0] probe_master1_currentSlave;
-	wire[3:0] probe_master2_currentSlave;
-	wire[3:0] probe_master3_currentSlave;
-	wire[1:0] probe_slave0_currentMaster;
-	wire[1:0] probe_slave1_currentMaster;
-	wire[1:0] probe_slave2_currentMaster;
-	wire[1:0] probe_slave3_currentMaster;
-	wire[1:0] probe_slave4_currentMaster;
-	wire[1:0] probe_slave5_currentMaster;
+	wire[3:0] probe_controller0_currentDevice;
+	wire[3:0] probe_controller1_currentDevice;
+	wire[3:0] probe_controller2_currentDevice;
+	wire[3:0] probe_controller3_currentDevice;
+	wire[1:0] probe_device0_currentController;
+	wire[1:0] probe_device1_currentController;
+	wire[1:0] probe_device2_currentController;
+	wire[1:0] probe_device3_currentController;
+	wire[1:0] probe_device4_currentController;
+	wire[1:0] probe_device5_currentController;
 
 
 	wire[15:0] probe_wishboneInterconnect = {
-		// probe_slave5_currentMaster,
-		// probe_slave4_currentMaster,
-		// probe_slave3_currentMaster,
-		// probe_slave2_currentMaster,
-		// probe_slave1_currentMaster,
-		// probe_slave0_currentMaster,
-		probe_master3_currentSlave,
-		probe_master2_currentSlave,
-		probe_master1_currentSlave,
-		probe_master0_currentSlave
+		// probe_device5_currentController,
+		// probe_device4_currentController,
+		// probe_device3_currentController,
+		// probe_device2_currentController,
+		// probe_device1_currentController,
+		// probe_device0_currentController,
+		probe_controller3_currentDevice,
+		probe_controller2_currentDevice,
+		probe_controller1_currentDevice,
+		probe_controller0_currentDevice
 	};
 
 	//-------------------------------------------------//
@@ -199,125 +203,131 @@ module ExperiarSoC_top (
 
 	WishboneInterconnect wishboneInterconnect(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
-		.master0_wb_cyc_o(caravel_wb_cyc_o),
-		.master0_wb_stb_o(caravel_wb_stb_o),
-		.master0_wb_we_o(caravel_wb_we_o),
-		.master0_wb_sel_o(caravel_wb_sel_o),
-		.master0_wb_data_o(caravel_wb_data_o),
-		.master0_wb_adr_o(caravel_wb_adr_o),
-		.master0_wb_ack_i(caravel_wb_ack_i),
-		.master0_wb_stall_i(caravel_wb_stall_i),
-		.master0_wb_error_i(caravel_wb_error_i),
-		.master0_wb_data_i(caravel_wb_data_i),
-		.master1_wb_cyc_o(core0_wb_cyc_o),
-		.master1_wb_stb_o(core0_wb_stb_o),
-		.master1_wb_we_o(core0_wb_we_o),
-		.master1_wb_sel_o(core0_wb_sel_o),
-		.master1_wb_data_o(core0_wb_data_o),
-		.master1_wb_adr_o(core0_wb_adr_o),
-		.master1_wb_ack_i(core0_wb_ack_i),
-		.master1_wb_stall_i(core0_wb_stall_i),
-		.master1_wb_error_i(core0_wb_error_i),
-		.master1_wb_data_i(core0_wb_data_i),
-		.master2_wb_cyc_o(core1_wb_cyc_o),
-		.master2_wb_stb_o(core1_wb_stb_o),
-		.master2_wb_we_o(core1_wb_we_o),
-		.master2_wb_sel_o(core1_wb_sel_o),
-		.master2_wb_data_o(core1_wb_data_o),
-		.master2_wb_adr_o(core1_wb_adr_o),
-		.master2_wb_ack_i(core1_wb_ack_i),
-		.master2_wb_stall_i(core1_wb_stall_i),
-		.master2_wb_error_i(core1_wb_error_i),
-		.master2_wb_data_i(core1_wb_data_i),
-		// .master3_wb_cyc_o(dma_wb_cyc_o),
-		// .master3_wb_stb_o(dma_wb_stb_o),
-		// .master3_wb_we_o(dma_wb_we_o),
-		// .master3_wb_sel_o(dma_wb_sel_o),
-		// .master3_wb_data_o(dma_wb_data_o),
-		// .master3_wb_adr_o(dma_wb_adr_o),
-		// .master3_wb_ack_i(dma_wb_ack_i),
-		// .master3_wb_stall_i(dma_wb_stall_i),
-		// .master3_wb_error_i(dma_wb_error_i),
-		// .master3_wb_data_i(dma_wb_data_i),
-		.slave0_wb_cyc_i(core0Memory_wb_cyc_i),
-		.slave0_wb_stb_i(core0Memory_wb_stb_i),
-		.slave0_wb_we_i(core0Memory_wb_we_i),
-		.slave0_wb_sel_i(core0Memory_wb_sel_i),
-		.slave0_wb_data_i(core0Memory_wb_data_i),
-		.slave0_wb_adr_i(core0Memory_wb_adr_i),
-		.slave0_wb_ack_o(core0Memory_wb_ack_o),
-		.slave0_wb_stall_o(core0Memory_wb_stall_o),
-		.slave0_wb_error_o(core0Memory_wb_error_o),
-		.slave0_wb_data_o(core0Memory_wb_data_o),
-		.slave1_wb_cyc_i(core1Memory_wb_cyc_i),
-		.slave1_wb_stb_i(core1Memory_wb_stb_i),
-		.slave1_wb_we_i(core1Memory_wb_we_i),
-		.slave1_wb_sel_i(core1Memory_wb_sel_i),
-		.slave1_wb_data_i(core1Memory_wb_data_i),
-		.slave1_wb_adr_i(core1Memory_wb_adr_i),
-		.slave1_wb_ack_o(core1Memory_wb_ack_o),
-		.slave1_wb_stall_o(core1Memory_wb_stall_o),
-		.slave1_wb_error_o(core1Memory_wb_error_o),
-		.slave1_wb_data_o(core1Memory_wb_data_o),
-		.slave2_wb_cyc_i(videoMemory_wb_cyc_i),
-		.slave2_wb_stb_i(videoMemory_wb_stb_i),
-		.slave2_wb_we_i(videoMemory_wb_we_i),
-		.slave2_wb_sel_i(videoMemory_wb_sel_i),
-		.slave2_wb_data_i(videoMemory_wb_data_i),
-		.slave2_wb_adr_i(videoMemory_wb_adr_i),
-		.slave2_wb_ack_o(videoMemory_wb_ack_o),
-		.slave2_wb_stall_o(videoMemory_wb_stall_o),
-		.slave2_wb_error_o(videoMemory_wb_error_o),
-		.slave2_wb_data_o(videoMemory_wb_data_o),
-		.slave3_wb_cyc_i(peripherals_wb_cyc_i),
-		.slave3_wb_stb_i(peripherals_wb_stb_i),
-		.slave3_wb_we_i(peripherals_wb_we_i),
-		.slave3_wb_sel_i(peripherals_wb_sel_i),
-		.slave3_wb_data_i(peripherals_wb_data_i),
-		.slave3_wb_adr_i(peripherals_wb_adr_i),
-		.slave3_wb_ack_o(peripherals_wb_ack_o),
-		.slave3_wb_stall_o(peripherals_wb_stall_o),
-		.slave3_wb_error_o(peripherals_wb_error_o),
-		.slave3_wb_data_o(peripherals_wb_data_o),
-		.slave4_wb_cyc_i(cachedMemory_wb_cyc_i[0]),
-		.slave4_wb_stb_i(cachedMemory_wb_stb_i[0]),
-		.slave4_wb_we_i(cachedMemory_wb_we_i[0]),
-		.slave4_wb_sel_i(cachedMemory_wb_sel_i[0]),
-		.slave4_wb_data_i(cachedMemory_wb_data_i[0]),
-		.slave4_wb_adr_i(cachedMemory_wb_adr_i[0]),
-		.slave4_wb_ack_o(cachedMemory_wb_ack_o[0]),
-		.slave4_wb_stall_o(cachedMemory_wb_stall_o[0]),
-		.slave4_wb_error_o(cachedMemory_wb_error_o[0]),
-		.slave4_wb_data_o(cachedMemory_wb_data_o[0]),
-		.slave5_wb_cyc_i(cachedMemory_wb_cyc_i[1]),
-		.slave5_wb_stb_i(cachedMemory_wb_stb_i[1]),
-		.slave5_wb_we_i(cachedMemory_wb_we_i[1]),
-		.slave5_wb_sel_i(cachedMemory_wb_sel_i[1]),
-		.slave5_wb_data_i(cachedMemory_wb_data_i[1]),
-		.slave5_wb_adr_i(cachedMemory_wb_adr_i[1]),
-		.slave5_wb_ack_o(cachedMemory_wb_ack_o[1]),
-		.slave5_wb_stall_o(cachedMemory_wb_stall_o[1]),
-		.slave5_wb_error_o(cachedMemory_wb_error_o[1]),
-		.slave5_wb_data_o(cachedMemory_wb_data_o[1]),
-		.probe_master0_currentSlave(probe_master0_currentSlave),
-		.probe_master1_currentSlave(probe_master1_currentSlave),
-		.probe_master2_currentSlave(probe_master2_currentSlave),
-		.probe_master3_currentSlave(probe_master3_currentSlave),
-		.probe_slave0_currentMaster(probe_slave0_currentMaster),
-		.probe_slave1_currentMaster(probe_slave1_currentMaster),
-		.probe_slave2_currentMaster(probe_slave2_currentMaster),
-		.probe_slave3_currentMaster(probe_slave3_currentMaster),
-		.probe_slave4_currentMaster(probe_slave4_currentMaster),
-		.probe_slave5_currentMaster(probe_slave5_currentMaster));
+		.controller0_wb_cyc_o(caravel_wb_cyc_o),
+		.controller0_wb_stb_o(caravel_wb_stb_o),
+		.controller0_wb_we_o(caravel_wb_we_o),
+		.controller0_wb_sel_o(caravel_wb_sel_o),
+		.controller0_wb_data_o(caravel_wb_data_o),
+		.controller0_wb_adr_o(caravel_wb_adr_o),
+		.controller0_wb_ack_i(caravel_wb_ack_i),
+		.controller0_wb_stall_i(caravel_wb_stall_i),
+		.controller0_wb_error_i(caravel_wb_error_i),
+		.controller0_wb_data_i(caravel_wb_data_i),
+		.controller1_wb_cyc_o(core0_wb_cyc_o),
+		.controller1_wb_stb_o(core0_wb_stb_o),
+		.controller1_wb_we_o(core0_wb_we_o),
+		.controller1_wb_sel_o(core0_wb_sel_o),
+		.controller1_wb_data_o(core0_wb_data_o),
+		.controller1_wb_adr_o(core0_wb_adr_o),
+		.controller1_wb_ack_i(core0_wb_ack_i),
+		.controller1_wb_stall_i(core0_wb_stall_i),
+		.controller1_wb_error_i(core0_wb_error_i),
+		.controller1_wb_data_i(core0_wb_data_i),
+		.controller2_wb_cyc_o(core1_wb_cyc_o),
+		.controller2_wb_stb_o(core1_wb_stb_o),
+		.controller2_wb_we_o(core1_wb_we_o),
+		.controller2_wb_sel_o(core1_wb_sel_o),
+		.controller2_wb_data_o(core1_wb_data_o),
+		.controller2_wb_adr_o(core1_wb_adr_o),
+		.controller2_wb_ack_i(core1_wb_ack_i),
+		.controller2_wb_stall_i(core1_wb_stall_i),
+		.controller2_wb_error_i(core1_wb_error_i),
+		.controller2_wb_data_i(core1_wb_data_i),
+		// .controller3_wb_cyc_o(dma_wb_cyc_o),
+		// .controller3_wb_stb_o(dma_wb_stb_o),
+		// .controller3_wb_we_o(dma_wb_we_o),
+		// .controller3_wb_sel_o(dma_wb_sel_o),
+		// .controller3_wb_data_o(dma_wb_data_o),
+		// .controller3_wb_adr_o(dma_wb_adr_o),
+		// .controller3_wb_ack_i(dma_wb_ack_i),
+		// .controller3_wb_stall_i(dma_wb_stall_i),
+		// .controller3_wb_error_i(dma_wb_error_i),
+		// .controller3_wb_data_i(dma_wb_data_i),
+		.device0_wb_cyc_i(core0Memory_wb_cyc_i),
+		.device0_wb_stb_i(core0Memory_wb_stb_i),
+		.device0_wb_we_i(core0Memory_wb_we_i),
+		.device0_wb_sel_i(core0Memory_wb_sel_i),
+		.device0_wb_data_i(core0Memory_wb_data_i),
+		.device0_wb_adr_i(core0Memory_wb_adr_i),
+		.device0_wb_ack_o(core0Memory_wb_ack_o),
+		.device0_wb_stall_o(core0Memory_wb_stall_o),
+		.device0_wb_error_o(core0Memory_wb_error_o),
+		.device0_wb_data_o(core0Memory_wb_data_o),
+		.device1_wb_cyc_i(core1Memory_wb_cyc_i),
+		.device1_wb_stb_i(core1Memory_wb_stb_i),
+		.device1_wb_we_i(core1Memory_wb_we_i),
+		.device1_wb_sel_i(core1Memory_wb_sel_i),
+		.device1_wb_data_i(core1Memory_wb_data_i),
+		.device1_wb_adr_i(core1Memory_wb_adr_i),
+		.device1_wb_ack_o(core1Memory_wb_ack_o),
+		.device1_wb_stall_o(core1Memory_wb_stall_o),
+		.device1_wb_error_o(core1Memory_wb_error_o),
+		.device1_wb_data_o(core1Memory_wb_data_o),
+		.device2_wb_cyc_i(videoMemory_wb_cyc_i),
+		.device2_wb_stb_i(videoMemory_wb_stb_i),
+		.device2_wb_we_i(videoMemory_wb_we_i),
+		.device2_wb_sel_i(videoMemory_wb_sel_i),
+		.device2_wb_data_i(videoMemory_wb_data_i),
+		.device2_wb_adr_i(videoMemory_wb_adr_i),
+		.device2_wb_ack_o(videoMemory_wb_ack_o),
+		.device2_wb_stall_o(videoMemory_wb_stall_o),
+		.device2_wb_error_o(videoMemory_wb_error_o),
+		.device2_wb_data_o(videoMemory_wb_data_o),
+		.device3_wb_cyc_i(peripherals_wb_cyc_i),
+		.device3_wb_stb_i(peripherals_wb_stb_i),
+		.device3_wb_we_i(peripherals_wb_we_i),
+		.device3_wb_sel_i(peripherals_wb_sel_i),
+		.device3_wb_data_i(peripherals_wb_data_i),
+		.device3_wb_adr_i(peripherals_wb_adr_i),
+		.device3_wb_ack_o(peripherals_wb_ack_o),
+		.device3_wb_stall_o(peripherals_wb_stall_o),
+		.device3_wb_error_o(peripherals_wb_error_o),
+		.device3_wb_data_o(peripherals_wb_data_o),
+		.device4_wb_cyc_i(cachedMemory_wb_cyc_i[0]),
+		.device4_wb_stb_i(cachedMemory_wb_stb_i[0]),
+		.device4_wb_we_i(cachedMemory_wb_we_i[0]),
+		.device4_wb_sel_i(cachedMemory_wb_sel_i[0]),
+		.device4_wb_data_i(cachedMemory_wb_data_i[0]),
+		.device4_wb_adr_i(cachedMemory_wb_adr_i[0]),
+		.device4_wb_ack_o(cachedMemory_wb_ack_o[0]),
+		.device4_wb_stall_o(cachedMemory_wb_stall_o[0]),
+		.device4_wb_error_o(cachedMemory_wb_error_o[0]),
+		.device4_wb_data_o(cachedMemory_wb_data_o[0]),
+		.device5_wb_cyc_i(cachedMemory_wb_cyc_i[1]),
+		.device5_wb_stb_i(cachedMemory_wb_stb_i[1]),
+		.device5_wb_we_i(cachedMemory_wb_we_i[1]),
+		.device5_wb_sel_i(cachedMemory_wb_sel_i[1]),
+		.device5_wb_data_i(cachedMemory_wb_data_i[1]),
+		.device5_wb_adr_i(cachedMemory_wb_adr_i[1]),
+		.device5_wb_ack_o(cachedMemory_wb_ack_o[1]),
+		.device5_wb_stall_o(cachedMemory_wb_stall_o[1]),
+		.device5_wb_error_o(cachedMemory_wb_error_o[1]),
+		.device5_wb_data_o(cachedMemory_wb_data_o[1]),
+		.probe_controller0_currentDevice(probe_controller0_currentDevice),
+		.probe_controller1_currentDevice(probe_controller1_currentDevice),
+		.probe_controller2_currentDevice(probe_controller2_currentDevice),
+		.probe_controller3_currentDevice(probe_controller3_currentDevice),
+		.probe_device0_currentController(probe_device0_currentController),
+		.probe_device1_currentController(probe_device1_currentController),
+		.probe_device2_currentController(probe_device2_currentController),
+		.probe_device3_currentController(probe_device3_currentController),
+		.probe_device4_currentController(probe_device4_currentController),
+		.probe_device5_currentController(probe_device5_currentController));
 
 	//-------------------------------------------------//
-	//----------------------CORE0----------------------//
+	//----------------------CORES----------------------//
 	//-------------------------------------------------//
+
+	genvar coreIndex;
+	generate
+		for (coreIndex = 0; coreIndex < CORE_COUNT; coreIndex = coreIndex + 1) begin
+		end
+	endgenerate
 
 	// JTAG interface
 	wire core0_tdi;
@@ -328,15 +338,9 @@ module ExperiarSoC_top (
 	wire[1:0] core0SRAM_csb0;
 	wire core0SRAM_web0;
 	wire[3:0] core0SRAM_wmask0;
-	wire[SRAM_ADDRESS_SIZE-1:0] core0SRAM_addr0;
+	wire[CORE_SRAM_ADDRESS_SIZE-1:0] core0SRAM_addr0;
 	wire[31:0] core0SRAM_din0;
 	wire[63:0] core0SRAM_dout0;
-
-	// SRAM r port
-	wire core0SRAM_clk1;
-	wire[1:0] core0SRAM_csb1;
-	wire[SRAM_ADDRESS_SIZE-1:0] core0SRAM_addr1;
-	wire[63:0] core0SRAM_dout1;
 
 	// Logic probes
 	wire probe_core0_state;
@@ -353,8 +357,8 @@ module ExperiarSoC_top (
 
 	ExperiarCore core0 (
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
@@ -403,12 +407,22 @@ module ExperiarSoC_top (
 		.probe_programCounter(probe_core0_programCounter),
 		.probe_jtagInstruction(probe_core0_jtagInstruction));
 
+
+	SRAMWrapper #(
+
+	) coreSRAM (
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
+	);
+
 	wire[31:0] core0SRAM0_dout0;
 	wire[31:0] core0SRAM0_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 core0SRAM0(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(core0SRAM_clk0),
 		.csb0(core0SRAM_csb0[0]),
@@ -426,8 +440,8 @@ module ExperiarSoC_top (
 	wire[31:0] core0SRAM1_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 core0SRAM1(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(core0SRAM_clk0),
 		.csb0(core0SRAM_csb0[1]),
@@ -461,7 +475,6 @@ module ExperiarSoC_top (
 	wire[31:0] core1SRAM_din0;
 	wire[63:0] core1SRAM_dout0;
 
-	// SRAM r port
 	wire core1SRAM_clk1;
 	wire[1:0] core1SRAM_csb1;
 	wire[SRAM_ADDRESS_SIZE-1:0] core1SRAM_addr1;
@@ -482,8 +495,8 @@ module ExperiarSoC_top (
 
 	ExperiarCore core1 (
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
@@ -536,8 +549,8 @@ module ExperiarSoC_top (
 	wire[31:0] core1SRAM0_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 core1SRAM0(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(core1SRAM_clk0),
 		.csb0(core1SRAM_csb0[0]),
@@ -555,8 +568,8 @@ module ExperiarSoC_top (
 	wire[31:0] core1SRAM1_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 core1SRAM1(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(core1SRAM_clk0),
 		.csb0(core1SRAM_csb0[1]),
@@ -576,6 +589,12 @@ module ExperiarSoC_top (
 	//-------------------------------------------------//
 	//------------------Cached Memory------------------//
 	//-------------------------------------------------//
+
+	genvar cacheIndex;
+	generate
+		for (cacheIndex = 0; cacheIndex < CACHED_MEMORY_COUNT; cacheIndex = cacheIndex + 1) begin
+		end
+	endgenerate
 
 	// Cache SRAM rw port
 	wire cachedMemorySRAM_clk0 [0:1];
@@ -597,8 +616,8 @@ module ExperiarSoC_top (
 		for (cachedMemoryIndex = 0; cachedMemoryIndex < 2; cachedMemoryIndex = cachedMemoryIndex + 1) begin
 			CachedMemory cachedMemory(
 `ifdef USE_POWER_PINS
-				.vccd1(vccd1),	// User area 1 1.8V power
-				.vssd1(vssd1),	// User area 1 digital ground
+				.VPWR(VPWR),
+				.VGND(VGND),
 `endif
 				.wb_clk_i(wb_clk_i),
 				.wb_rst_i(wb_rst_i),
@@ -635,8 +654,8 @@ module ExperiarSoC_top (
 
 				sky130_sram_2kbyte_1rw1r_32x512_8 cachedMemorySRAM(
 `ifdef USE_POWER_PINS
-				.vccd1(vccd1),	// User area 1 1.8V power
-				.vssd1(vssd1),	// User area 1 digital ground
+				.VPWR(VPWR),
+				.VGND(VGND),
 `endif
 				.clk0(cachedMemorySRAM_clk0[cachedMemoryIndex]),
 				.csb0(cachedMemorySRAM_csb0[cachedMemoryIndex]),
@@ -697,8 +716,8 @@ module ExperiarSoC_top (
 	wire[1:0] video_irq;
 	Video video(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
@@ -746,8 +765,8 @@ module ExperiarSoC_top (
 	wire[31:0] videoSRAM0_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 videoSRAM0(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(videoSRAMLeft_clk0),
 		.csb0(videoSRAMLeft_csb0[0]),
@@ -766,8 +785,8 @@ module ExperiarSoC_top (
 	wire[31:0] videoSRAM1_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 videoSRAM1(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(videoSRAMLeft_clk0),
 		.csb0(videoSRAMLeft_csb0[1]),
@@ -789,8 +808,8 @@ module ExperiarSoC_top (
 	wire[31:0] videoSRAM2_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 videoSRAM2(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(videoSRAMRight_clk0),
 		.csb0(videoSRAMRight_csb0[0]),
@@ -809,8 +828,8 @@ module ExperiarSoC_top (
 	wire[31:0] videoSRAM3_dout1;
 	sky130_sram_2kbyte_1rw1r_32x512_8 videoSRAM3(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk0(videoSRAMRight_clk0),
 		.csb0(videoSRAMRight_csb0[1]),
@@ -835,8 +854,8 @@ module ExperiarSoC_top (
 	wire[9:0] peripheral_irq;
 	Peripherals peripherals(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),

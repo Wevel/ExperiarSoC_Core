@@ -1,6 +1,6 @@
 `default_nettype none
 
-module LocalMemoryInterface #(
+module LocalMemoryInterface_RW #(
 		parameter ADDRESS_SIZE = 24,
 		parameter SRAM_ADDRESS_SIZE = 9
 	)(
@@ -31,12 +31,7 @@ module LocalMemoryInterface #(
 		output wire[SRAM_ADDRESS_SIZE-1:0] sram_primaryAddress,
 		output reg[3:0] sram_primaryWriteMask,
 		output reg[31:0] sram_primaryDataWrite,
-		input wire[31:0] sram_primaryDataRead,
-
-		// SRAM secondary R port
-		output wire sram_secondarySelect,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram_secondaryAddress,
-		input wire[31:0] sram_secondaryDataRead
+		input wire[31:0] sram_primaryDataRead
 	);
 
 	localparam PRIMARY = 1'b0;
@@ -45,7 +40,7 @@ module LocalMemoryInterface #(
 	// Primary enable pins
 	wire primarySRAMEnable;
 	wire primarySRAMWriteEnable = primarySRAMEnable && primaryWriteEnable && ~|primaryAddress[1:0];
-	wire primarySRAMReadEnable = primarySRAMEnable && !primaryWriteEnable && ~|primaryAddress[1:0];
+	// wire primarySRAMReadEnable = primarySRAMEnable && !primaryWriteEnable && ~|primaryAddress[1:0];
 
 	// Secondary enable pins
 	wire secondarySRAMEnable;
@@ -63,14 +58,9 @@ module LocalMemoryInterface #(
 	endgenerate
 
 	// Generate SRAM control signals
-	// Primary can always read from read only port
-	// Primary can always write to read/write port
-	// Wishbone can read/write to read/write port, but only if primary is not writing to it
 	wire[31:0] rwPortReadData;
-	wire[31:0] rPortReadData;
 
 	// Action complete control
-	wire rActionDone;
 	wire rwActionDone;
 	reg primaryActionDone = 1'b0;
 	reg[3:0] lastPrimaryByteSelect = 4'b0;
@@ -78,9 +68,6 @@ module LocalMemoryInterface #(
 		if (rst) begin
 			primaryActionDone <= 1'b0;
 			lastPrimaryByteSelect <= 4'b0;
-		end	else if (rActionDone) begin
-			primaryActionDone <= 1'b1;
-			lastPrimaryByteSelect <= primaryByteSelect;
 		end	else if (rwActionDone && (wrController == PRIMARY)) begin
 			primaryActionDone <= 1'b1;
 			lastPrimaryByteSelect <= primaryByteSelect;
@@ -110,7 +97,7 @@ module LocalMemoryInterface #(
 			wrController <= 1'b0;
 		end else begin
 			if (rwActionDone || !rwPortEnable) begin
-				if (primarySRAMWriteEnable) begin
+				if (primarySRAMEnable) begin
 					wrController <= PRIMARY;
 				end else if (secondarySRAMEnable) begin
 					wrController <= SECONDARY;
@@ -120,11 +107,11 @@ module LocalMemoryInterface #(
 	end
 
 	// Busy signals
-	assign primaryBusy = primarySRAMWriteEnable && (wrController != PRIMARY || !primaryActionDone);
+	assign primaryBusy = primarySRAMEnable && (wrController != PRIMARY || !primaryActionDone);
 	assign secondaryBusy = secondarySRAMEnable && (wrController != SECONDARY || !secondaryActionDone);
 
 	// Read/Write port
-	wire rwPortEnable = wrController ? secondarySRAMEnable : primarySRAMWriteEnable;
+	wire rwPortEnable = wrController ? secondarySRAMEnable : primarySRAMEnable;
 	reg rwWriteEnable;
 	reg[SRAM_ADDRESS_SIZE-1:0] rwAddress;
 	always @(*) begin
@@ -146,22 +133,18 @@ module LocalMemoryInterface #(
 		end
 	end
 
+	assign primaryDataRead = {
+		lastPrimaryByteSelect[3] && primaryActionDone ? rwPortReadData[31:24] : ~8'h00,
+		lastPrimaryByteSelect[2] && primaryActionDone ? rwPortReadData[23:16] : ~8'h00,
+		lastPrimaryByteSelect[1] && primaryActionDone ? rwPortReadData[15:8]  : ~8'h00,
+		lastPrimaryByteSelect[0] && primaryActionDone ? rwPortReadData[7:0]   : ~8'h00
+	};
+
 	assign secondaryDataRead = {
 		lastSecondaryByteSelect[3] && secondaryActionDone ? rwPortReadData[31:24] : ~8'h00,
 		lastSecondaryByteSelect[2] && secondaryActionDone ? rwPortReadData[23:16] : ~8'h00,
 		lastSecondaryByteSelect[1] && secondaryActionDone ? rwPortReadData[15:8]  : ~8'h00,
 		lastSecondaryByteSelect[0] && secondaryActionDone ? rwPortReadData[7:0]   : ~8'h00
-	};
-
-	// Read port
-	wire rPortEnable = primarySRAMReadEnable && !primaryActionDone;
-	wire[SRAM_ADDRESS_SIZE-1:0] rAddress = primaryAddress[SRAM_ADDRESS_SIZE+1:2];
-
-	assign primaryDataRead = {
-		lastPrimaryByteSelect[3] && primaryActionDone ? rPortReadData[31:24] : ~8'h00,
-		lastPrimaryByteSelect[2] && primaryActionDone ? rPortReadData[23:16] : ~8'h00,
-		lastPrimaryByteSelect[1] && primaryActionDone ? rPortReadData[15:8]  : ~8'h00,
-		lastPrimaryByteSelect[0] && primaryActionDone ? rPortReadData[7:0]   : ~8'h00
 	};
 
 	// Shared write signals
@@ -188,16 +171,8 @@ module LocalMemoryInterface #(
 	assign sram_primaryWriteEnable = rwWriteEnable;
 	assign sram_primaryAddress = rwAddress;
 
-	// SRAM secondary control signals
-	assign sram_secondarySelect = rPortEnable;
-	assign sram_secondaryAddress = rAddress;
-
 	// SRAM primary read data
 	assign rwActionDone = rwPortEnable;
 	assign rwPortReadData = sram_primaryDataRead;
-
-	// SRAM secondary read data
-	assign rActionDone = rPortEnable;
-	assign rPortReadData = sram_secondaryDataRead;
 
 endmodule

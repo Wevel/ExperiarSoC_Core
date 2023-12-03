@@ -35,7 +35,7 @@ module Traps (
 		input wire isDataAddressBreakpoint,
 		input wire[15:0] userInterrupts,
 		input wire trapReturn,
-		output wire inTrap,
+		output reg inTrap,
 		output wire[31:0] trapVector,
 		output wire[31:0] trapReturnVector
 	);
@@ -56,30 +56,30 @@ module Traps (
 
 	wire misalignedInstructionFetch = isFetchAddressMisaligned || isJumpMissaligned;
 
-	reg[30:0] trapCause;
+	reg[3:0] trapCause;
 	always @(*) begin
 		if (isInterrupt) begin
 			case (1'b1)
-				isMachineSoftwareInterrupt: trapCause = 30'd3;
-				isMachineTimerInterrupt: trapCause = 30'd7;
-				|userInterrupts: trapCause = 30'd8;
-				isMachineExternalInterrupt: trapCause = 30'd11;
-				default: trapCause = 30'b0;
+				isMachineSoftwareInterrupt: trapCause = 4'd3;
+				isMachineTimerInterrupt: trapCause = 4'd7;
+				|userInterrupts: trapCause = 4'd8;
+				isMachineExternalInterrupt: trapCause = 4'd11;
+				default: trapCause = 4'b0;
 			endcase
 		end else begin
 			case (1'b1)
-				isFetchAddressBreakpoint: trapCause = 30'd3;
-				isFetchAccessFault: trapCause = 30'd1;
-				isInvalidInstruction: trapCause = 30'd2;
-				misalignedInstructionFetch: trapCause = 30'd0;
-				isECALL: trapCause = 30'd11;
-				isEBREAK: trapCause = 30'd3;
-				isDataAddressBreakpoint: trapCause = 30'd3;
-				isDataAddressMisaligned_store: trapCause = 30'd6;
-				isDataAddressMisaligned_load: trapCause = 30'd4;
-				isDataAccessFault_store: trapCause = 30'd7;
-				isDataAccessFault_load: trapCause = 30'd5;
-				default: trapCause = 30'b0;
+				isFetchAddressBreakpoint: trapCause = 4'd3;
+				isFetchAccessFault: trapCause = 4'd1;
+				isInvalidInstruction: trapCause = 4'd2;
+				misalignedInstructionFetch: trapCause = 4'd0;
+				isECALL: trapCause = 4'd11;
+				isEBREAK: trapCause = 4'd3;
+				isDataAddressBreakpoint: trapCause = 4'd3;
+				isDataAddressMisaligned_store: trapCause = 4'd6;
+				isDataAddressMisaligned_load: trapCause = 4'd4;
+				isDataAccessFault_store: trapCause = 4'd7;
+				isDataAccessFault_load: trapCause = 4'd5;
+				default: trapCause = 4'b0;
 			endcase
 		end
 	end
@@ -117,9 +117,13 @@ module Traps (
 	wire isBreakPoint = isEBREAK || isFetchAddressBreakpoint || isDataAddressBreakpoint;
 	wire isTrap = isException || isInterrupt;
 
-	assign inTrap = isTrap;
+	always @(negedge clk) begin
+		if (rst) inTrap <= 1'b0;
+		else inTrap <= isTrap;
+	end
 
-	wire[31:0] mipLoadValue = machineInterruptEnable ? pendingInterrupts : 1'b0;
+
+	wire[31:0] mipLoadValue = machineInterruptEnable ? pendingInterrupts : 32'b0;
 
 	reg[31:0] mtvalLoadValue;
 	always @(*) begin
@@ -142,9 +146,8 @@ module Traps (
 	wire _unused_mstatusReadDataEnable;
 	wire[31:0] mstatusWriteData;
 	wire mstatusWriteDataEnable;
+	wire[29:0] _unused_mstatusWriteData = { mstatusWriteData[31:8], mstatusWriteData[6:4], mstatusWriteData[2:0] };
 	CSR_DataRegister #(.ADDRESS(12'h300)) mstatus(
-		.clk(clk),
-		.rst(rst),
 		.csrWriteEnable(csrWriteEnable),
 		.csrReadEnable(csrReadEnable),
 		.csrWriteAddress(csrWriteAddress),
@@ -201,8 +204,6 @@ module Traps (
 	wire[31:0] mtvecWriteData;
 	wire mtvecWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h305)) mtvec(
-		.clk(clk),
-		.rst(rst),
 		.csrWriteEnable(csrWriteEnable),
 		.csrReadEnable(csrReadEnable),
 		.csrWriteAddress(csrWriteAddress),
@@ -250,8 +251,6 @@ module Traps (
 	wire[31:0] mepcWriteData;
 	wire mepcWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h341)) mepc(
-		.clk(clk),
-		.rst(rst),
 		.csrWriteEnable(csrWriteEnable),
 		.csrReadEnable(csrReadEnable),
 		.csrWriteAddress(csrWriteAddress),
@@ -281,8 +280,6 @@ module Traps (
 	wire[31:0] mcauseWriteData;
 	wire mcauseWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h342)) mcause(
-		.clk(clk),
-		.rst(rst),
 		.csrWriteEnable(csrWriteEnable),
 		.csrReadEnable(csrReadEnable),
 		.csrWriteAddress(csrWriteAddress),
@@ -298,7 +295,7 @@ module Traps (
 	always @(posedge clk) begin
 		if (rst) mcauseValue <= 32'b0;
 		else begin
-			if (isTrap) mcauseValue <= { isInterrupt, trapCause };
+			if (isTrap) mcauseValue <= { isInterrupt, 27'b0, trapCause };
 			else if (mcauseWriteDataEnable) mcauseValue <= mcauseWriteData;
 		end
 	end
@@ -310,8 +307,6 @@ module Traps (
 	wire[31:0] mtvalWriteData;
 	wire mtvalWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h343)) mtval(
-		.clk(clk),
-		.rst(rst),
 		.csrWriteEnable(csrWriteEnable),
 		.csrReadEnable(csrReadEnable),
 		.csrWriteAddress(csrWriteAddress),
@@ -339,8 +334,6 @@ module Traps (
 	wire[31:0] mipWriteData;
 	wire mipWriteDataEnable;
 	CSR_DataRegister #(.ADDRESS(12'h344)) mip(
-		.clk(clk),
-		.rst(rst),
 		.csrWriteEnable(csrWriteEnable),
 		.csrReadEnable(csrReadEnable),
 		.csrWriteAddress(csrWriteAddress),

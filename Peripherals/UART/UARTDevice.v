@@ -1,7 +1,9 @@
 `default_nettype none
 
 module UARTDevice  #(
-		parameter ID = 4'h0
+		parameter ID = 4'h0,
+		parameter RX_BUFFER_SIZE = 32,
+		parameter TX_BUFFER_SIZE = 32
 	)(
 		input wire clk,
 		input wire rst,
@@ -23,9 +25,6 @@ module UARTDevice  #(
 		output wire uart_tx,
 		output wire uart_irq
 	);
-
-	localparam RX_BUFFER_SIZE = 32;
-	localparam TX_BUFFER_SIZE = 32;
 
 	// Buffer values used for interrupts and status register
 	wire txDataLost;

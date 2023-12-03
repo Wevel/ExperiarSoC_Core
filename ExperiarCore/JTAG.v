@@ -47,31 +47,31 @@ module JTAG (
 	localparam STATE_IR_UPDATE 		  = 4'hF;
 
 	// https://www.microsemi.com/document-portal/doc_download/130050-ac160-ieee-standard-1149-1-jtag-in-the-sx-rtsx-sx-a-ex-rt54sx-s-families-app-note
-	localparam INSTRUCTION_EXTEST 	= 5'b00000;
+	// localparam INSTRUCTION_EXTEST 	= 5'b00000;
 	localparam INSTRUCTION_SAMPLE 	= 5'b00001;
-	localparam INSTRUCTION_INTEST 	= 5'b00010;
+	// localparam INSTRUCTION_INTEST 	= 5'b00010;
 	localparam INSTRUCTION_USERCODE = 5'b00011;
 	localparam INSTRUCTION_IDCODE 	= 5'b00100;
 	localparam INSTRUCTION_BYPASS 	= 5'b11111;
 
 	reg tckState = 1'b0;
 	reg tckRisingEdge = 1'b0;
-	reg tckFallingEdge = 1'b0;
+	// reg tckFallingEdge = 1'b0;
 
 	always @(posedge clk) begin
 		if (rst) begin
 			tckState <= 1'b0;
-			tckRisingEdge = 1'b0;
-			tckFallingEdge = 1'b0;
+			tckRisingEdge <= 1'b0;
+			// tckFallingEdge <= 1'b0;
 		end else begin
 			if (jtag_tck != tckState) begin
-				if (jtag_tck) tckRisingEdge = 1'b1;
-				else tckFallingEdge = 1'b1;
+				if (jtag_tck) tckRisingEdge <= 1'b1;
+				// else tckFallingEdge <= 1'b1;
 
 				tckState <= jtag_tck;
 			end else begin
-				tckRisingEdge = 1'b0;
-				tckFallingEdge = 1'b0;
+				tckRisingEdge <= 1'b0;
+				// tckFallingEdge <= 1'b0;
 			end
 		end
 	end
@@ -201,11 +201,11 @@ module JTAG (
 
 	reg[2:0] managementState = MANAGEMENT_STATE_IDLE;
 	reg[31:0] managementReadData = 32'b0;
-	reg[25:0] managementAddress = 20'b0;
+	reg[19:0] managementAddress = 20'b0;
 	reg[31:0] managementWriteData = 32'b0;
 	reg[3:0] managementByteSelect = 4'h0;
 
-	wire managementCommandByteSelect = bsrDataRead[29:26];
+	wire[3:0] managementCommandByteSelect = bsrDataRead[29:26];
 	wire managementCommandWriteEnable = bsrDataRead[30];
 	wire managementCommandReadEnable = bsrDataRead[31];
 
@@ -213,7 +213,7 @@ module JTAG (
 		if (rst) begin
 			managementState <= MANAGEMENT_STATE_IDLE;
 			managementReadData <= 32'b0;
-			managementAddress <= 26'b0;
+			managementAddress <= 20'b0;
 			managementWriteData <= 32'b0;
 			managementByteSelect <= 4'h0;
 		end else begin
@@ -222,7 +222,7 @@ module JTAG (
 					managementReadData <= 32'b0;
 
 					if (bsrWriteEnable) begin
-						if (!managementCommandByteSelect) begin
+						if (!|managementCommandByteSelect) begin
 							managementAddress <= bsrDataRead[19:0];
 							managementByteSelect <= managementCommandByteSelect;
 
@@ -264,7 +264,7 @@ module JTAG (
 	assign management_writeEnable = managementState == MANAGEMENT_STATE_WRITE;
 	assign management_enable = (managementState == MANAGEMENT_STATE_READ) || (managementState == MANAGEMENT_STATE_WRITE);
 	assign management_byteSelect = managementByteSelect;
-	assign management_address = managementAddress[19:0];
-	assign management_writeData = managementState == MANAGEMENT_STATE_WRITE ? managementReadData : 32'b0;
+	assign management_address = managementAddress;
+	assign management_writeData = managementState == MANAGEMENT_STATE_WRITE ? managementWriteData : 32'b0;
 
 endmodule

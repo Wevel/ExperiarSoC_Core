@@ -1,14 +1,15 @@
 `default_nettype none
 
-module Video (
+module Video_top (
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
+
 		input wire wb_clk_i,
 		input wire wb_rst_i,
 
-		// Wishbone Slave ports
+		// Wishbone device ports
 		input wire wb_stb_i,
 		input wire wb_cyc_i,
 		input wire wb_we_i,
@@ -23,35 +24,33 @@ module Video (
 		// IRQ
 		output wire[1:0] video_irq,
 
-		// Left Video SRAM rw port
-		output wire sram0_clk0,
-		output wire[1:0] sram0_csb0,
-		output wire sram0_web0,
-		output wire[3:0] sram0_wmask0,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram0_addr0,
-		output wire[31:0] sram0_din0,
-		input wire[63:0] sram0_dout0,
+		// Pixel data memory
+		// Pixel SRAM rw bus port
+		output reg sram_pixel_primarySelect,
+		output wire sram_pixel_primaryWriteEnable,
+		output wire[3:0] sram_pixel_primaryWriteMask,
+		output wire[SRAM_ADDRESS_SIZE-1:0] sram_pixel_primaryAddress,
+		output wire[31:0] sram_pixel_primaryDataWrite,
+		input wire[31:0] sram_pixel_primaryDataRead,
 
-		// Left Video SRAM r port
-		output wire sram0_clk1,
-		output wire[1:0] sram0_csb1,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram0_addr1,
-		input wire[63:0] sram0_dout1,
+		// pixel SRAM r draw port
+		output reg sram_pixel_secondarySelect,
+		output reg[SRAM_ADDRESS_SIZE-1:0] sram_pixel_secondaryAddress,
+		input wire[31:0] sram_pixel_secondaryDataRead,
 
-		// Right Video SRAM rw port
-		output wire sram1_clk0,
-		output wire[1:0] sram1_csb0,
-		output wire sram1_web0,
-		output wire[3:0] sram1_wmask0,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram1_addr0,
-		output wire[31:0] sram1_din0,
-		input wire[63:0] sram1_dout0,
+		// Pixel data memory or tilemap memory depending on mode
+		// Tilemap SRAM rw bus port
+		output reg sram_tileMap_primarySelect,
+		output wire sram_tileMap_primaryWriteEnable,
+		output wire[3:0] sram_tileMap_primaryWriteMask,
+		output wire[SRAM_ADDRESS_SIZE-1:0] sram_tileMap_primaryAddress,
+		output wire[31:0] sram_tileMap_primaryDataWrite,
+		input wire[31:0] sram_tileMap_primaryDataRead,
 
-		// Right Video SRAM r port
-		output wire sram1_clk1,
-		output wire[1:0] sram1_csb1,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram1_addr1,
-		input wire[63:0] sram1_dout1,
+		// Tilemap SRAM r draw port
+		output reg sram_tileMap_secondarySelect,
+		output reg[SRAM_ADDRESS_SIZE-1:0] sram_tileMap_secondaryAddress,
+		input wire[31:0] sram_tileMap_secondaryDataRead,
 
 		// VGA
 		//input wire vga_clk,
@@ -62,7 +61,11 @@ module Video (
 		output wire vga_hsync
 	);
 
-	localparam SRAM_ADDRESS_SIZE = 9;
+	localparam SRAM_ADDRESS_SIZE = 10;
+	localparam TOTAL_SRAM_ADDRESS_SIZE = (SRAM_ADDRESS_SIZE + 3);
+
+	localparam HORIZONTAL_BITS = 6;
+	localparam VERTICAL_BITS = (TOTAL_SRAM_ADDRESS_SIZE - HORIZONTAL_BITS);
 
 	wire vga_clk = wb_clk_i;
 
@@ -75,10 +78,10 @@ module Video (
 	wire[31:0] peripheralBus_dataWrite;
 
 	WBPeripheralBusInterface wbPeripheralBusInterface(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
 		.wb_stb_i(wb_stb_i),
@@ -98,19 +101,19 @@ module Video (
 		.peripheralBus_byteSelect(peripheralBus_byteSelect),
 		.peripheralBus_dataRead(peripheralBus_dataRead),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite));
-	
-	wire video_fetchData;
-	wire[SRAM_ADDRESS_SIZE+3:0] vga_address;
+
+	wire vga_spriteMode;
+	wire vga_fetchData;
+	wire[TOTAL_SRAM_ADDRESS_SIZE-1:0] vga_address;
 	wire[31:0] vga_data;
 
 	wire videoMemoryBusBusy;
 	wire[31:0] videoMemoryDataRead;
 	wire videoMemoryRequestOutput;
-	wire vga_fetchData;
 	VideoMemory videoMemory(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
@@ -122,40 +125,36 @@ module Video (
 		.peripheralBus_dataRead(videoMemoryDataRead),
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.requestOutput(videoMemoryRequestOutput),
-		.video_fetchData(vga_fetchData),
-		.video_address(vga_address),
-		.video_data(vga_data),
-		.sram0_csb0(sram0_csb0),
-		.sram0_web0(sram0_web0),
-		.sram0_wmask0(sram0_wmask0),
-		.sram0_addr0(sram0_addr0),
-		.sram0_din0(sram0_din0),
-		.sram0_dout0(sram0_dout0),
-		.sram0_csb1(sram0_csb1),
-		.sram0_addr1(sram0_addr1),
-		.sram0_dout1(sram0_dout1),
-		.sram1_csb0(sram1_csb0),
-		.sram1_web0(sram1_web0),
-		.sram1_wmask0(sram1_wmask0),
-		.sram1_addr0(sram1_addr0),
-		.sram1_din0(sram1_din0),
-		.sram1_dout0(sram1_dout0),
-		.sram1_csb1(sram1_csb1),
-		.sram1_addr1(sram1_addr1),
-		.sram1_dout1(sram1_dout1));
-
-	assign sram0_clk0 = vga_clk;
-	assign sram0_clk1 = vga_clk;
-	assign sram1_clk0 = vga_clk;
-	assign sram1_clk1 = vga_clk;
+		.pixel_spriteMode(vga_spriteMode),
+		.pixel_fetchData(vga_fetchData),
+		.pixel_address(vga_address),
+		.pixel_data(vga_data),
+		.sram_pixel_primarySelect(sram_pixel_primarySelect),
+		.sram_pixel_primaryWriteEnable(sram_pixel_primaryWriteEnable),
+		.sram_pixel_primaryWriteMask(sram_pixel_primaryWriteMask),
+		.sram_pixel_primaryAddress(sram_pixel_primaryAddress),
+		.sram_pixel_primaryDataWrite(sram_pixel_primaryDataWrite),
+		.sram_pixel_primaryDataRead(sram_pixel_primaryDataRead),
+		.sram_pixel_secondarySelect(sram_pixel_secondarySelect),
+		.sram_pixel_secondaryAddress(sram_pixel_secondaryAddress),
+		.sram_pixel_secondaryDataRead(sram_pixel_secondaryDataRead),
+		.sram_tileMap_primarySelect(sram_tileMap_primarySelect),
+		.sram_tileMap_primaryWriteEnable(sram_tileMap_primaryWriteEnable),
+		.sram_tileMap_primaryWriteMask(sram_tileMap_primaryWriteMask),
+		.sram_tileMap_primaryAddress(sram_tileMap_primaryAddress),
+		.sram_tileMap_primaryDataWrite(sram_tileMap_primaryDataWrite),
+		.sram_tileMap_primaryDataRead(sram_tileMap_primaryDataRead),
+		.sram_tileMap_secondarySelect(sram_tileMap_secondarySelect),
+		.sram_tileMap_secondaryAddress(sram_tileMap_secondaryAddress),
+		.sram_tileMap_secondaryDataRead(sram_tileMap_secondaryDataRead));
 
 	wire vgaBusBusy;
 	wire[31:0] vgaDataRead;
 	wire vgaRequestOutput;
-	VGA #(.ADDRESS_BITS(SRAM_ADDRESS_SIZE + 4)) vga(
+	VGA #(.HORIZONTAL_BITS(HORIZONTAL_BITS), .VERTICAL_BITS(VERTICAL_BITS)) vga(
 `ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
+		.VPWR(VPWR),
+		.VGND(VGND),
 `endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
@@ -168,6 +167,7 @@ module Video (
 		.peripheralBus_dataWrite(peripheralBus_dataWrite),
 		.requestOutput(vgaRequestOutput),
 		.vga_clk(vga_clk),
+		.vga_spriteMode(vga_spriteMode),
 		.vga_fetchData(vga_fetchData),
 		.vga_address(vga_address),
 		.vga_data(vga_data),
@@ -179,7 +179,7 @@ module Video (
 		.vga_irq(video_irq));
 
 	assign peripheralBus_busy = videoMemoryBusBusy || vgaBusBusy;
-	assign peripheralBus_dataRead = videoMemoryRequestOutput ? videoMemoryDataRead : 
+	assign peripheralBus_dataRead = videoMemoryRequestOutput ? videoMemoryDataRead :
 									vgaRequestOutput ? vgaDataRead : ~32'b0;
 
 endmodule

@@ -1,8 +1,6 @@
 `default_nettype none
 
-module PipeFetch #(
-	 	parameter PROGRAM_COUNTER_RESET = 32'b0
-	)(
+module PipeFetch (
 		input wire clk,
 		input wire rst,
 
@@ -53,10 +51,9 @@ module PipeFetch #(
 	end
 
 	// Fetch control
-	reg delayedStepPipe;
 	always @(negedge clk) begin
 		if (rst) begin
-			instructionCached <= 1'b0;			
+			instructionCached <= 1'b0;
 		end else begin
 			if (stepPipe) begin
 				instructionCached <= 1'b0;
@@ -65,8 +62,6 @@ module PipeFetch #(
 					instructionCached <= 1'b1;
 				end
 			end
-			
-			delayedStepPipe <= stepPipe;
 		end
 	end
 

@@ -17,7 +17,7 @@ module CSR_TimerRegister #(
 		input wire count,
 		output wire[63:0] value
 	);
-	
+
 	wire csrReadEnabledLower = csrReadAddress == ADDRESS_LOWER;
 	wire csrReadEnabledUpper = csrReadAddress == ADDRESS_UPPER;
 
@@ -33,16 +33,16 @@ module CSR_TimerRegister #(
 
 	always @(*) begin
 		if (csrReadEnable) begin
-			if (csrReadEnabledLower) csrReadData <= currentValue[31:0];
-			else if (csrReadEnabledUpper) csrReadData <= currentValue[63:32];
-			else csrReadData <= 32'b0;
+			if (csrReadEnabledLower) csrReadData = currentValue[31:0];
+			else if (csrReadEnabledUpper) csrReadData = currentValue[63:32];
+			else csrReadData = 32'b0;
 		end else begin
-			csrReadData <= 32'b0;
-		end 
+			csrReadData = 32'b0;
+		end
 	end
 
 	assign csrRequestOutput = (csrReadEnabledLower || csrReadEnabledUpper) && csrReadEnable;
-	
+
 	assign value = currentValue;
-	
+
 endmodule

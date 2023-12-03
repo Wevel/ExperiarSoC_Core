@@ -4,18 +4,19 @@
 	`define MPRJ_IO_PADS (19 + 19)
 `endif
 
-`define UART_COUNT 4
-`define PWM_COUNT 4
-`define PWM_OUTPUTS_PER_DEVICE 1
-`define SPI_COUNT 1
 
-module Peripherals_top (
+module Peripherals_top #(
+		parameter UART_COUNT = 2,
+		parameter PWM_COUNT = 4,
+		parameter PWM_OUTPUTS_PER_DEVICE = 2,
+		parameter SPI_COUNT = 1
+	)(
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
-		// Wishbone Slave ports
+		// Wishbone device ports
 		input wire wb_clk_i,
 		input wire wb_rst_i,
 		input wire wb_stb_i,
@@ -58,7 +59,7 @@ module Peripherals_top (
 		// IRQ
 		// input wire irq_en,
 		// output wire irq_in,
-		output wire[9:0] peripheral_irq,
+		output wire[UART_COUNT+PWM_COUNT+2-1:0] peripheral_irq,
 
 		// VGA
 		input wire[1:0] vga_r,
@@ -83,10 +84,10 @@ module Peripherals_top (
 	wire[31:0] peripheralBus_dataWrite;
 
 	WBPeripheralBusInterface wbPeripheralBusInterface(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
 		.wb_stb_i(wb_stb_i),
@@ -110,16 +111,16 @@ module Peripherals_top (
 	wire uart_peripheralBus_busy;
 	wire[31:0] uart_peripheralBus_dataRead;
 	wire uart_requestOutput;
-	wire[`UART_COUNT-1:0] uart_en;
-	wire[`UART_COUNT-1:0] uart_rx;
-	wire[`UART_COUNT-1:0] uart_tx;
-	wire[`UART_COUNT-1:0] uart_irq;
+	wire[UART_COUNT-1:0] uart_en;
+	wire[UART_COUNT-1:0] uart_rx;
+	wire[UART_COUNT-1:0] uart_tx;
+	wire[UART_COUNT-1:0] uart_irq;
 	wire _unused_uart_en0 = uart_en[0]; // Internal UART
-	UART #(.ID(8'h00), .DEVICE_COUNT(`UART_COUNT)) uart(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+	UART #(.ID(8'h00), .DEVICE_COUNT(UART_COUNT)) uart(
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
@@ -141,16 +142,16 @@ module Peripherals_top (
 	wire spi_peripheralBus_busy;
 	wire[31:0] spi_peripheralBus_dataRead;
 	wire spi_requestOutput;
-	wire[`SPI_COUNT-1:0] spi_en;
-	wire[`SPI_COUNT-1:0] spi_clk;
-	wire[`SPI_COUNT-1:0] spi_mosi;
-	wire[`SPI_COUNT-1:0] spi_miso;
-	wire[`SPI_COUNT-1:0] spi_cs;
-	SPI #(.ID(8'h01), .DEVICE_COUNT(`SPI_COUNT)) spi(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+	wire[SPI_COUNT-1:0] spi_en;
+	wire[SPI_COUNT-1:0] spi_clk;
+	wire[SPI_COUNT-1:0] spi_mosi;
+	wire[SPI_COUNT-1:0] spi_miso;
+	wire[SPI_COUNT-1:0] spi_cs;
+	SPI #(.ID(8'h01), .DEVICE_COUNT(SPI_COUNT)) spi(
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
@@ -170,14 +171,14 @@ module Peripherals_top (
 	wire pwm_peripheralBus_busy;
 	wire[31:0] pwm_peripheralBus_dataRead;
 	wire pwm_requestOutput;
-	wire[(`PWM_COUNT*`PWM_OUTPUTS_PER_DEVICE)-1:0] pwm_en;
-	wire[(`PWM_COUNT*`PWM_OUTPUTS_PER_DEVICE)-1:0] pwm_out;
-	wire[`PWM_COUNT-1:0] pwm_irq;
-	PWM #(.ID(8'h02), .DEVICE_COUNT(`PWM_COUNT), .OUTPUTS_PER_DEVICE(`PWM_OUTPUTS_PER_DEVICE)) pwm(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+	wire[(PWM_COUNT*PWM_OUTPUTS_PER_DEVICE)-1:0] pwm_en;
+	wire[(PWM_COUNT*PWM_OUTPUTS_PER_DEVICE)-1:0] pwm_out;
+	wire[PWM_COUNT-1:0] pwm_irq;
+	PWM #(.ID(8'h02), .DEVICE_COUNT(PWM_COUNT), .OUTPUTS_PER_DEVICE(PWM_OUTPUTS_PER_DEVICE)) pwm(
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
@@ -200,10 +201,10 @@ module Peripherals_top (
 	wire[`MPRJ_IO_PADS-1:0] gpio_oe;
 	wire[1:0] gpio_irq;
 	GPIO #(.ID(8'h03)) gpio(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
 		.peripheralBus_we(peripheralBus_we),
@@ -219,23 +220,28 @@ module Peripherals_top (
 		.gpio_oe(gpio_oe),
 		.gpio_irq(gpio_irq));
 
-	IOMultiplexer ioMux(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+	IOMultiplexer #(
+		 .UART_COUNT(UART_COUNT),
+		 .PWM_COUNT(PWM_COUNT),
+		 .PWM_OUTPUTS_PER_DEVICE(PWM_OUTPUTS_PER_DEVICE),
+		 .SPI_COUNT(SPI_COUNT)
+	) ioMux(
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.clk(wb_clk_i),
 		.rst(wb_rst_i),
-		.uart_en(uart_en[3:1]),
-		.uart_rx(uart_rx[3:1]),
-		.uart_tx(uart_tx[3:1]),
+		.uart_en(uart_en[UART_COUNT-1:1]),
+		.uart_rx(uart_rx[UART_COUNT-1:1]),
+		.uart_tx(uart_tx[UART_COUNT-1:1]),
 		.spi_en(spi_en),
 		.spi_clk(spi_clk),
 		.spi_mosi(spi_mosi),
 		.spi_miso(spi_miso),
 		.spi_cs(spi_cs),
-		.pwm_en(pwm_en[3:0]),
-		.pwm_out(pwm_out[3:0]),
+		.pwm_en(pwm_en),
+		.pwm_out(pwm_out),
 		.gpio_input(gpio_input),
 		.gpio_output(gpio_output),
 		.gpio_oe(gpio_oe),

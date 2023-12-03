@@ -37,7 +37,7 @@ module MemoryController (
 		input wire[31:0] wbDataRead,
 		input wire wbBusy
 	);
-	
+
 	localparam LOCAL_MEMORY_ADDRESS = 4'b0000;
 	localparam WB_ADDRESS 		    = 4'b0001;
 
@@ -53,65 +53,65 @@ module MemoryController (
 	reg[1:0] localMemory_source = SOURCE_NONE;
 	always @(posedge clk) begin
 		if (rst) begin
-			localMemory_source = SOURCE_NONE;
+			localMemory_source <= SOURCE_NONE;
 		end else begin
 			case (localMemory_source)
 				SOURCE_NONE: begin
-					if (instruction_enableLocalMemoryRequest) localMemory_source = SOURCE_INSTRUCTION;
-					else if (data_enableLocalMemoryRequest) localMemory_source = SOURCE_DATA;
+					if (instruction_enableLocalMemoryRequest) localMemory_source <= SOURCE_INSTRUCTION;
+					else if (data_enableLocalMemoryRequest) localMemory_source <= SOURCE_DATA;
 				end
 
 				SOURCE_INSTRUCTION: begin
 					if (!instruction_enableLocalMemoryRequest) begin
-						if (data_enableLocalMemoryRequest) localMemory_source = SOURCE_DATA;
-						else localMemory_source = SOURCE_NONE;
+						if (data_enableLocalMemoryRequest) localMemory_source <= SOURCE_DATA;
+						else localMemory_source <= SOURCE_NONE;
 					end
 				end
 
 				SOURCE_DATA: begin
 					if (!data_enableLocalMemoryRequest) begin
-						if (instruction_enableLocalMemoryRequest) localMemory_source = SOURCE_INSTRUCTION;
-						else localMemory_source = SOURCE_NONE;
+						if (instruction_enableLocalMemoryRequest) localMemory_source <= SOURCE_INSTRUCTION;
+						else localMemory_source <= SOURCE_NONE;
 					end
 				end
 
 				default: begin
-					localMemory_source = SOURCE_NONE;
+					localMemory_source <= SOURCE_NONE;
 				end
 			endcase
-		end		
+		end
 	end
 
 	reg[1:0] wb_source = SOURCE_NONE;
 	always @(posedge clk) begin
 		if (rst) begin
-			wb_source = SOURCE_NONE;
+			wb_source <= SOURCE_NONE;
 		end else begin
 			case (wb_source)
 				SOURCE_NONE: begin
-					if (instruction_enableWBRequest) wb_source = SOURCE_INSTRUCTION;
-					else if (data_enableWBRequest) wb_source = SOURCE_DATA;
+					if (instruction_enableWBRequest) wb_source <= SOURCE_INSTRUCTION;
+					else if (data_enableWBRequest) wb_source <= SOURCE_DATA;
 				end
 
 				SOURCE_INSTRUCTION: begin
 					if (!instruction_enableWBRequest) begin
-						if (data_enableWBRequest) wb_source = SOURCE_DATA;
-						else wb_source = SOURCE_NONE;
+						if (data_enableWBRequest) wb_source <= SOURCE_DATA;
+						else wb_source <= SOURCE_NONE;
 					end
 				end
 
 				SOURCE_DATA: begin
 					if (!data_enableWBRequest) begin
-						if (instruction_enableWBRequest) wb_source = SOURCE_INSTRUCTION;
-						else wb_source = SOURCE_NONE;
+						if (instruction_enableWBRequest) wb_source <= SOURCE_INSTRUCTION;
+						else wb_source <= SOURCE_NONE;
 					end
 				end
 
 				default: begin
-					wb_source = SOURCE_NONE;
+					wb_source <= SOURCE_NONE;
 				end
 			endcase
-		end		
+		end
 	end
 
 	always @(*) begin
@@ -200,37 +200,37 @@ module MemoryController (
 
 	always @(*) begin
 		if (rst) begin
-			coreInstructionDataRead <= ~32'b0;
-			coreInstructionBusy 	<= 1'b1;
+			coreInstructionDataRead = ~32'b0;
+			coreInstructionBusy = 1'b1;
 		end else begin
 			if (localMemory_source == SOURCE_INSTRUCTION) begin
-				coreInstructionDataRead <= localMemoryDataRead;
-				coreInstructionBusy 	<= localMemoryBusy;
+				coreInstructionDataRead = localMemoryDataRead;
+				coreInstructionBusy = localMemoryBusy;
 			end else if (wb_source == SOURCE_INSTRUCTION) begin
-				coreInstructionDataRead <= wbDataRead;
-				coreInstructionBusy 	<= wbBusy;
+				coreInstructionDataRead = wbDataRead;
+				coreInstructionBusy = wbBusy;
 			end else begin
-				coreInstructionDataRead <= ~32'b0;
-				coreInstructionBusy 	<= 1'b1;
+				coreInstructionDataRead = ~32'b0;
+				coreInstructionBusy = 1'b1;
 			end
 		end
 	end
 
 	always @(*) begin
 		if (rst) begin
-			coreDataDataRead <= ~32'b0;
-			coreDataBusy 	 <= 1'b1;
+			coreDataDataRead = ~32'b0;
+			coreDataBusy 	 = 1'b1;
 		end else begin
 			if (localMemory_source == SOURCE_DATA) begin
-				coreDataDataRead <= localMemoryDataRead;
-				coreDataBusy 	 <= localMemoryBusy;
+				coreDataDataRead = localMemoryDataRead;
+				coreDataBusy = localMemoryBusy;
 			end else if (wb_source == SOURCE_DATA) begin
-				coreDataDataRead <= wbDataRead;
-				coreDataBusy 	 <= wbBusy;
+				coreDataDataRead = wbDataRead;
+				coreDataBusy = wbBusy;
 			end
 			 else begin
-				coreDataDataRead <= ~32'b0;
-				coreDataBusy 	 <= 1'b1;
+				coreDataDataRead = ~32'b0;
+				coreDataBusy = 1'b1;
 			end
 		end
 	end

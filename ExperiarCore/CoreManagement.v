@@ -4,6 +4,9 @@ module CoreManagement (
 		input wire clk,
 		input wire rst,
 
+		// Configuration
+		output wire[31:0] resetProgramCounterAddress,
+
 		// Interface to core
 		output wire management_run,
 		output wire management_interruptEnable,
@@ -31,21 +34,21 @@ module CoreManagement (
 		input wire wb_management_enable,
 		input wire wb_management_writeEnable,
 		input wire[3:0] wb_management_byteSelect,
-		input wire[19:0] wb_management_address,
+		input wire[23:0] wb_management_address,
 		input wire[31:0] wb_management_writeData,
 		output wire[31:0] wb_management_readData,
 		output wire wb_management_busy
 	);
 
-	// Master select
+	// Controller select
 	wire jtagSelect = jtag_management_enable;
 	wire wbRequest = wb_management_enable;
-	wire wbSelect = wbRequest && !jtagSelect;
+	wire wbSelect = wbRequest && !|wb_management_address[23:20] && !jtagSelect;
 
 	wire peripheralBus_we = jtag_management_writeEnable || (!jtagSelect && wb_management_writeEnable);
 	wire peripheralBus_oe = (jtag_management_enable && !jtag_management_writeEnable)  || (!jtagSelect && wb_management_enable && !wb_management_writeEnable);
 	wire[19:0] peripheralBus_address = jtagSelect ? jtag_management_address :
-								   	   wbSelect   ? wb_management_address   : 20'b0;
+								   	   wbSelect   ? wb_management_address[19:0]   : 20'b0;
 	wire[3:0] peripheralBus_byteSelect = jtagSelect ? jtag_management_byteSelect :
 								   	     wbSelect   ? wb_management_byteSelect   : 4'h0;
 	wire[31:0] peripheralBus_dataWrite = jtag_management_writeEnable ? jtag_management_writeData :
@@ -133,6 +136,21 @@ module CoreManagement (
 		.requestOutput(dataBreakpointAddressOutputRequest),
 		.currentValue(dataBreakpointAddress));
 
+	wire[31:0] resetProgramCounterAddressOutputData;
+	wire resetProgramCounterAddressOutputRequest;
+	ConfigurationRegister #(.WIDTH(32), .ADDRESS(12'h00C), .DEFAULT(32'b0)) resetProgramCounterAddressRegister(
+		.clk(clk),
+		.rst(rst),
+		.enable(registerEnable),
+		.peripheralBus_we(peripheralBus_we),
+		.peripheralBus_oe(peripheralBus_oe),
+		.peripheralBus_address(peripheralBus_address[11:0]),
+		.peripheralBus_byteSelect(peripheralBus_byteSelect),
+		.peripheralBus_dataWrite(peripheralBus_dataWrite),
+		.peripheralBus_dataRead(resetProgramCounterAddressOutputData),
+		.requestOutput(resetProgramCounterAddressOutputRequest),
+		.currentValue(resetProgramCounterAddress));
+
 	always @(posedge clk) begin
 		if (rst) begin
 			isInstructionAddressBreakpoint <= 1'b0;
@@ -153,6 +171,7 @@ module CoreManagement (
 	assign peripheralBus_dataRead = coreEnable 			 					  ? management_readData 				   :
 									controlRegisterOutputRequest			  ? controlRegisterOutputData			   :
 									instructionBreakpointAddressOutputRequest ? instructionBreakpointAddressOutputData :
-									dataBreakpointAddressOutputRequest 		  ? dataBreakpointAddressOutputData 	   : ~32'b0;
+									dataBreakpointAddressOutputRequest 		  ? dataBreakpointAddressOutputData 	   :
+									resetProgramCounterAddressOutputRequest	  ? resetProgramCounterAddressOutputData   : ~32'b0;
 
 endmodule

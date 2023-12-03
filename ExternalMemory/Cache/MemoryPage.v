@@ -156,7 +156,7 @@ module MemoryPage #(
 			case(state)
 				STATE_EMPTY: begin
 					if (requireAddressChange) begin
-						`ifdef DEBUG_CACHED_MEMORY
+						`ifdef SIM && DEBUG_CACHED_MEMORY
 							$display("Changing base address of cached memory page 0x%h to 0x%h", pageIndex, qspi_address);
 							$fflush();
 						`endif
@@ -198,7 +198,7 @@ module MemoryPage #(
 							pendingLoad <= 1'b1;
 							pendingLoadAddress <= qspi_address;
 						end	else begin
-							`ifdef DEBUG_CACHED_MEMORY
+							`ifdef SIM && DEBUG_CACHED_MEMORY
 								$display("Changing base address of cached memory page 0x%h to 0x%h", pageIndex, qspi_address);
 								$fflush();
 							`endif

@@ -2,11 +2,11 @@
 
 module WBPeripheralBusInterface (
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
-		// Wishbone Slave ports
+		// Wishbone device ports
 		input wire wb_clk_i,
 		input wire wb_rst_i,
 		input wire wb_stb_i,

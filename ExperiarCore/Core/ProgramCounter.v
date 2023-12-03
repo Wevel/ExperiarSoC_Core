@@ -4,6 +4,8 @@ module ProgramCounter(
 		input wire clk,
 		input wire rst,
 
+		input wire[31:0] resetProgramCounterAddress,
+
 		// Management interface
 		input wire management_writeProgramCounter_set,
 		input wire management_writeProgramCounter_jump,
@@ -39,28 +41,30 @@ module ProgramCounter(
 	// This makes sure the address is updated prior to the instruction being fetched
 	always @(*) begin
 		if (rst) begin
-			nextFetchProgramCounter = 32'b0;
+			nextFetchProgramCounter = resetProgramCounterAddress;
 			stepProgramCounter = 1'b0;
 		end else begin
 			nextFetchProgramCounter = fetchProgramCounter;
 			stepProgramCounter = 1'b0;
 
 			case (state)
+				STATE_HALT: begin
+
+				end
+
 				STATE_EXECUTE: begin
-					if (stepPipe) begin
-						if (inTrap) begin
-							nextFetchProgramCounter = trapVector;
-							stepProgramCounter = 1'b1;
-						end	else if (pipe1_isRET) begin
-							nextFetchProgramCounter = trapReturnVector;
-							stepProgramCounter = 1'b1;
-						end else if (pipe1_jumpEnable) begin
-							nextFetchProgramCounter = pipe1_nextProgramCounter;
-							stepProgramCounter = 1'b1;
-						end else if (!stallPipe) begin
-							nextFetchProgramCounter = fetchProgramCounter + 4;
-							stepProgramCounter = 1'b1;
-						end
+					if (inTrap) begin
+						nextFetchProgramCounter = trapVector;
+						stepProgramCounter = 1'b1;
+					end	else if (pipe1_isRET) begin
+						nextFetchProgramCounter = trapReturnVector;
+						stepProgramCounter = 1'b1;
+					end else if (pipe1_jumpEnable) begin
+						nextFetchProgramCounter = pipe1_nextProgramCounter;
+						stepProgramCounter = 1'b1;
+					end else if (!stallPipe) begin
+						nextFetchProgramCounter = fetchProgramCounter + 4;
+						stepProgramCounter = 1'b1;
 					end
 				end
 			endcase

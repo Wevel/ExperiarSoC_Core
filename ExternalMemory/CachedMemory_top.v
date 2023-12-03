@@ -3,10 +3,11 @@
 `include "Cache/CacheManagement.v"
 
 module CachedMemory_top (
-	`ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+`ifdef USE_POWER_PINS
+		inout VPWR,
+		inout VGND,
 `endif
+
 		input wire wb_clk_i,
 		input wire wb_rst_i,
 
@@ -39,17 +40,12 @@ module CachedMemory_top (
 		output wire[3:0] sram_primaryWriteMask,
 		output wire[SRAM_ADDRESS_SIZE-1:0] sram_primaryAddress,
 		output wire[31:0] sram_primaryDataWrite,
-		input wire[31:0] sram_primaryDataRead,
-
-		// Wishbone SRAM r port
-		output wire sram_secondarySelect,
-		output wire[SRAM_ADDRESS_SIZE-1:0] sram_secondaryAddress,
-		input wire[31:0] sram_secondaryDataRead
+		input wire[31:0] sram_primaryDataRead
 	);
 
 	localparam ADDRESS_SIZE = 24;
-	localparam SRAM_ADDRESS_SIZE = 9;
-	localparam PAGE_INDEX_ADDRESS_SIZE = 4;
+	localparam SRAM_ADDRESS_SIZE = 8;
+	localparam PAGE_INDEX_ADDRESS_SIZE = 3;
 
 	localparam PAGE_NUMBER_ADDRESS_SIZE = (ADDRESS_SIZE - PAGE_DATA_ADDRESS_SIZE - 2);
 	localparam PAGE_DATA_ADDRESS_SIZE = (SRAM_ADDRESS_SIZE - PAGE_INDEX_ADDRESS_SIZE);
@@ -78,10 +74,10 @@ module CachedMemory_top (
 	wire[31:0] peripheralBus_dataRead;
 	wire[31:0] peripheralBus_dataWrite;
 	WBPeripheralBusInterface wbPeripheralBusInterface(
-	`ifdef USE_POWER_PINS
-		.vccd1(vccd1),	// User area 1 1.8V power
-		.vssd1(vssd1),	// User area 1 digital ground
-	`endif
+`ifdef USE_POWER_PINS
+		.VPWR(VPWR),
+		.VGND(VGND),
+`endif
 		.wb_clk_i(wb_clk_i),
 		.wb_rst_i(wb_rst_i),
 		.wb_stb_i(wb_stb_i),
@@ -222,7 +218,7 @@ module CachedMemory_top (
 		.device_io1_read(qspi_io1_read));
 
 	// Two port SRAM controller
-	LocalMemoryInterface #(
+	LocalMemoryInterface_RW #(
 		.ADDRESS_SIZE(SRAM_ADDRESS_SIZE+2),
 		.SRAM_ADDRESS_SIZE(SRAM_ADDRESS_SIZE)
 	) localMemoryInterface (
@@ -247,9 +243,6 @@ module CachedMemory_top (
 		.sram_primaryWriteMask(sram_primaryWriteMask),
 		.sram_primaryAddress(sram_primaryAddress),
 		.sram_primaryDataWrite(sram_primaryDataWrite),
-		.sram_primaryDataRead(sram_primaryDataRead),
-		.sram_secondarySelect(sram_secondarySelect),
-		.sram_secondaryAddress(sram_secondaryAddress),
-		.sram_secondaryDataRead(sram_secondaryDataRead));
+		.sram_primaryDataRead(sram_primaryDataRead));
 
 endmodule

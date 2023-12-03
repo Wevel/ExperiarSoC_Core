@@ -2,12 +2,15 @@
 
 module RV32ICore(
 `ifdef USE_POWER_PINS
-	inout vccd1,	// User area 1 1.8V supply
-	inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
 		input wire clk,
 		input wire rst,
+
+		// Configuration
+		input wire[31:0] resetProgramCounterAddress,
 
 		// Instruction cache interface
 		output wire[31:0] instruction_memoryAddress,
@@ -69,7 +72,7 @@ module RV32ICore(
 
 	// Pipe control
 	wire progressPipe;
-	wire pipeActive;
+	// wire pipeActive;
 	wire stepPipe;
 	wire stallPipe;
 	wire stepProgramCounter;
@@ -80,22 +83,22 @@ module RV32ICore(
 	// State control
 	always @(posedge clk) begin
 		if (rst) begin
-			state = STATE_HALT;
+			state <= STATE_HALT;
 		end else begin
 			case (state)
 				STATE_HALT: begin
 					if (progressPipe) begin
-						state = STATE_EXECUTE;
+						state <= STATE_EXECUTE;
 					end
 				end
 
 				STATE_EXECUTE: begin
 					if (stepPipe) begin
-						if (!progressPipe) state = STATE_HALT;
+						if (!progressPipe) state <= STATE_HALT;
 					end
 				end
 
-				default: state = STATE_HALT;
+				default: state <= STATE_HALT;
 			endcase
 		end
 	end
@@ -107,7 +110,6 @@ module RV32ICore(
 
 	wire management_selectProgramCounter      = (management_address[15:14] == MANAGMENT_ADDRESS_SYSTEM) && (management_address[13:4] == 10'h000);
 	wire management_selectInstructionRegister = (management_address[15:14] == MANAGMENT_ADDRESS_SYSTEM) && (management_address[13:4] == 10'h001);
-	wire management_selectClearError		  = (management_address[15:14] == MANAGMENT_ADDRESS_SYSTEM) && (management_address[13:4] == 10'h002);
 	wire management_selectRegister            = (management_address[15:14] == MANAGMENT_ADDRESS_REGISTERS) && (management_address[13:7] == 7'h00);
 	wire management_selectCSR 				  = management_address[15:14] == MANAGMENT_ADDRESS_CSR;
 
@@ -116,7 +118,6 @@ module RV32ICore(
 	wire management_writeProgramCounter_set = management_writeProgramCounter && (management_address[3:0] == 4'h0);
 	wire management_writeProgramCounter_jump = management_writeProgramCounter && (management_address[3:0] == 4'h4);
 	wire management_writeProgramCounter_step = management_writeProgramCounter && (management_address[3:0] == 4'h8);
-	wire management_writeClearError = management_writeValid && management_selectClearError;
 	wire management_writeRegister = management_writeValid && management_selectRegister;
 	wire management_writeCSR = management_writeValid && management_selectCSR;
 
@@ -126,7 +127,9 @@ module RV32ICore(
 	wire management_readRegister = management_readValid && management_selectRegister;
 	wire management_readCSR = management_readValid && management_selectCSR;
 
-	
+	wire[4:0] management_writeRegisterAddress = management_address[6:2];
+	wire[11:0] management_writeCSRAddress = management_address[13:2];
+
 	reg management_previousRun;
 	wire management_restart = (management_run && !management_previousRun) || management_writeProgramCounter_step;
 
@@ -146,9 +149,6 @@ module RV32ICore(
 
 	wire management_allowInstruction = (management_run && management_previousRun) || management_writeProgramCounter_step || management_pipeStartup;
 
-	wire[4:0] management_registerIndex = management_address[6:2];
-	wire[11:0] management_csrIndex = management_address[13:2];
-
 	reg[31:0] management_dataOut;
 
 	wire[31:0] csrReadData;
@@ -157,7 +157,7 @@ module RV32ICore(
 		case (1'b1)
 			management_readProgramCounter: management_dataOut = fetchProgramCounter;
 			management_readInstructionRegister : management_dataOut = pipe1_currentInstruction;
-			management_readRegister: management_dataOut = !management_registerIndex ? registers[management_registerIndex] : 32'b0;
+			management_readRegister: management_dataOut = |management_writeRegisterAddress ? registers[management_writeRegisterAddress] : 32'b0;
 			management_readCSR: management_dataOut = csrReadData;
 			default: management_dataOut = ~32'b0;
 		endcase
@@ -176,8 +176,6 @@ module RV32ICore(
 
 	// ----------State----------
 	FlowControl flowControl(
-		.clk(clk),
-		.rst(rst),
 		.management_allowInstruction(management_allowInstruction),
 		.stateExecute(state == STATE_EXECUTE),
 		.requestingInstruction(instruction_memoryEnable),
@@ -196,6 +194,7 @@ module RV32ICore(
 	ProgramCounter programCounter(
 		.clk(clk),
 		.rst(rst),
+		.resetProgramCounterAddress(resetProgramCounterAddress),
 		.management_writeProgramCounter_set(management_writeProgramCounter_set),
 		.management_writeProgramCounter_jump(management_writeProgramCounter_jump),
 		.management_writeData(management_writeData),
@@ -227,7 +226,6 @@ module RV32ICore(
 	wire pipe0_stall;
 	wire pipe0_active;
 	wire[31:0] pipe0_currentInstruction;
-	wire[31:0] pipe0_programCounter;
 	wire pipe0_addressMisaligned;
 	wire[31:0] pipe0_instructionFetchAddress;
 	wire pipe0_instructionFetchEnable;
@@ -322,7 +320,7 @@ module RV32ICore(
 		.isRET(pipe1_isRET));
 
 	assign pipe1_shouldStall = pipe1_isJump || pipe1_isFence || pipe1_isRET;
-	
+
 	always @(posedge clk) begin
 		if (rst) begin
 			pipe1_resultRegister <= 32'b0;
@@ -386,9 +384,9 @@ module RV32ICore(
 	// 3: Store data
 	wire pipe2_stall;
 	wire pipe2_active;
-	wire pipe2_invalidInstruction;
-	wire[31:0] pipe2_currentInstruction;
-	wire pipe2_expectingLoad;
+	wire _unused_pipe2_invalidInstruction;
+	wire[31:0] _unused_pipe2_currentInstruction;
+	wire _unused_pipe2_expectingLoad;
 	wire[4:0] pipe2_rdAddress;
 	wire[31:0] pipe2_registerWriteData;
 	wire pipe2_registerWriteEnable;
@@ -405,9 +403,9 @@ module RV32ICore(
 		.currentPipeStall(pipe2_stall),
 		.active(pipe2_active),
 		.currentInstruction(pipe1_currentInstruction),
-		.lastInstruction(pipe2_currentInstruction),
-		.invalidInstruction(pipe2_invalidInstruction),
-		.expectingLoad(pipe2_expectingLoad),
+		.lastInstruction(_unused_pipe2_currentInstruction),
+		.invalidInstruction(_unused_pipe2_invalidInstruction),
+		.expectingLoad(_unused_pipe2_expectingLoad),
 		.memoryDataRead(storeLoadResult ? data_memoryDataRead : pipe1_loadResult),
 		.aluResultData(pipe1_resultRegister),
 		.csrData(pipe1_csrData),
@@ -421,21 +419,21 @@ module RV32ICore(
 		.isRET(pipe2_isRET));
 
 	assign pipe2_shouldStall = pipe2_isFence || pipe2_isRET;
-	assign pipeActive = pipe0_active || pipe1_active || pipe2_active;
+	// assign pipeActive = pipe0_active || pipe1_active || pipe2_active;
 
 	// Integer restister control
 	// Check if pipe1 needs the value being written by pipe2
 	always @(*) begin
 		if (pipe2_registerWriteEnable && pipe2_rdAddress == pipe1_rs1Address) begin
-			pipe1_rs1Data <= |pipe1_rs1Address ? pipe2_registerWriteData : 32'b0;
+			pipe1_rs1Data = |pipe1_rs1Address ? pipe2_registerWriteData : 32'b0;
 		end else begin
-			pipe1_rs1Data <= |pipe1_rs1Address ? registers[pipe1_rs1Address] : 32'b0;
+			pipe1_rs1Data = |pipe1_rs1Address ? registers[pipe1_rs1Address] : 32'b0;
 		end
 
 		if (pipe2_registerWriteEnable && pipe2_rdAddress == pipe1_rs2Address) begin
-			pipe1_rs2Data <= |pipe1_rs2Address ? pipe2_registerWriteData : 32'b0;
+			pipe1_rs2Data = |pipe1_rs2Address ? pipe2_registerWriteData : 32'b0;
 		end else begin
-			pipe1_rs2Data <= |pipe1_rs2Address ? registers[pipe1_rs2Address] : 32'b0;
+			pipe1_rs2Data = |pipe1_rs2Address ? registers[pipe1_rs2Address] : 32'b0;
 		end
 	end
 
@@ -446,6 +444,8 @@ module RV32ICore(
 				if (delayedStepPipe) begin
 					if (pipe2_registerWriteEnable && |pipe2_rdAddress) registers[pipe2_rdAddress] <= pipe2_registerWriteData;
 				end
+			end else begin
+				if (management_writeRegister && |management_writeRegisterAddress) registers[management_writeRegisterAddress] <= management_writeData;
 			end
 		end
 	end
@@ -463,7 +463,7 @@ module RV32ICore(
 	assign data_memoryWriteEnable = pipe1_memoryWriteEnable;
 	assign data_memoryDataWrite = pipe1_memoryWriteData;
 
-	// System commands 
+	// System commands
 	wire eCall = pipe1_isECALL && stateExecute;
 	wire eBreak = pipe1_isEBREAK && stateExecute;
 	wire trapReturn = pipe1_isRET && stateExecute;
@@ -476,10 +476,10 @@ module RV32ICore(
 	// CSR interface
 	wire csrWriteEnable = management_writeCSR || (management_run && pipe2_csrWriteEnable && stateExecute);
 	wire csrReadEnable = management_readCSR || (management_run && pipe1_csrReadEnable && stateExecute);
-	wire[11:0] csrWriteAddress = !management_run ? management_csrIndex : pipe2_csrWriteAddress;
-	wire[11:0] csrReadAddress = !management_run ? management_csrIndex : pipe1_csrReadAddress;
+	wire[11:0] csrWriteAddress = !management_run ? management_writeCSRAddress : pipe2_csrWriteAddress;
+	wire[11:0] csrReadAddress = !management_run ? management_writeCSRAddress : pipe1_csrReadAddress;
 	wire[31:0] csrWriteData = !management_run ? management_writeData : pipe2_csrWriteData;
-	
+
 	wire instructionCompleted = stepPipe && !pipe2_stall;
 	CSR csr(
 		.clk(clk),

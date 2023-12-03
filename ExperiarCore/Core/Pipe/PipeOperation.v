@@ -63,24 +63,24 @@ module PipeOperation (
 		.lastInstruction(lastInstruction));
 
 	// Instruction decode
-	wire[6:0] opcode;
+	wire[6:0] _unused_opcode;
 	wire[4:0] rdIndex; wire[4:0] rs1Index; wire[4:0] rs2Index;
 	wire[2:0] funct3; wire[6:0] funct7;
 	wire isCompressed;
 	wire isLUI; wire isAUIPC; wire isJAL; wire isJALR; wire isBranch; wire isLoad; wire isStore;
-	wire isALUImmBase; wire isALUImmNormal; wire isALUImmShift; wire isALUImm; wire isALU;
-	wire isSystem; 
-	wire isCSR; wire isCSRIMM; wire isCSRRW; wire isCSRRS; wire isCSRRC; 
+	wire _unused_isALUImmBase; wire _unused_isALUImmNormal; wire isALUImmShift; wire isALUImm; wire isALU;
+	wire _unused_isSystem;
+	wire isCSR; wire isCSRIMM; wire isCSRRW; wire isCSRRS; wire isCSRRC;
 	InstructionDecode decode(
 		.currentInstruction(currentInstruction),
 		.isNOP(pipeStall),
-		.opcode(opcode),
+		.opcode(_unused_opcode),
 		.rdIndex(rdIndex), .rs1Index(rs1Index), .rs2Index(rs2Index),
 		.funct3(funct3), .funct7(funct7),
 		.isCompressed(isCompressed),
 		.isLUI(isLUI), .isAUIPC(isAUIPC), .isJAL(isJAL), .isJALR(isJALR), .isBranch(isBranch), .isLoad(isLoad), .isStore(isStore),
-		.isALUImmBase(isALUImmBase), .isALUImmNormal(isALUImmNormal), .isALUImmShift(isALUImmShift), .isALUImm(isALUImm), .isALU(isALU),
-		.isFence(isFence), .isSystem(isSystem),
+		.isALUImmBase(_unused_isALUImmBase), .isALUImmNormal(_unused_isALUImmNormal), .isALUImmShift(isALUImmShift), .isALUImm(isALUImm), .isALU(isALU),
+		.isFence(isFence), .isSystem(_unused_isSystem),
 		.isCSR(isCSR), .isCSRIMM(isCSRIMM), .isCSRRW(isCSRRW), .isCSRRS(isCSRRS), .isCSRRC(isCSRRC),
 		.isECALL(isECALL), .isEBREAK(isEBREAK), .isRET(isRET),
 		.invalidInstruction(invalidInstruction)
@@ -131,7 +131,7 @@ module PipeOperation (
 						default: takeBranch = 1'b0;
 			endcase
 		end else begin
-			takeBranch <= 1'b0;
+			takeBranch = 1'b0;
 		end
 	end
 
@@ -160,20 +160,21 @@ module PipeOperation (
 	wire[31:0] nextProgramCounterWord = nextProgramCounterBase + nextProgramCounterOffset;
 	wire[31:0] nextProgramCounterCompressed = programCounterLink; // TODO: Need to implement compressed branch and jump instructions
 	wire[31:0] nextProgramCounterFull = isCompressed ? nextProgramCounterCompressed : nextProgramCounterWord;
+	wire _unused_nextProgramCounterFull = nextProgramCounterFull[0];
 	assign isJump = isJAL || isJALR || takeBranch;
 	assign jumpEnable = isJAL || isJALR || takeBranch;
 	assign failedBranch = isBranch && !takeBranch;
 	assign nextProgramCounter = { nextProgramCounterFull[31:1] , 1'b0};
 	assign jumpMissaligned = !isCompressed && |nextProgramCounter[1:0] && (isJAL || isJALR || takeBranch);
 
-	// ALU	
+	// ALU
 	wire aluAlt = funct7 == 7'b0100000 && (isALU || isALUImmShift);
-	
+
 	// Using only a single shifter also from https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV/TUTORIALS/FROM_BLINKER_TO_RISCV#from-blinker-to-risc-v
 	// Although I feel like there is an easier way to flip bit orderings
 	function [31:0] flipBits32 (input [31:0] x);
-		flipBits32 = { x[ 0], x[ 1], x[ 2], x[ 3], x[ 4], x[ 5], x[ 6], x[ 7], 
-					   x[ 8], x[ 9], x[10], x[11], x[12], x[13], x[14], x[15], 
+		flipBits32 = { x[ 0], x[ 1], x[ 2], x[ 3], x[ 4], x[ 5], x[ 6], x[ 7],
+					   x[ 8], x[ 9], x[10], x[11], x[12], x[13], x[14], x[15],
 					   x[16], x[17], x[18], x[19], x[20], x[21], x[22], x[23],
 					   x[24], x[25], x[26], x[27], x[28], x[29], x[30], x[31] };
 	endfunction
@@ -182,6 +183,7 @@ module PipeOperation (
 	wire[31:0] shiftInput = isLeftShift ? flipBits32(inputA) : inputA;
 	wire signed[32:0] signedShiftInput = { aluAlt && shiftInput[31] && !isLeftShift, shiftInput };
 	wire[32:0] aluShifter = $signed(signedShiftInput >>> inputB[4:0]);
+	wire _unused_aluShifter = aluShifter[32];
 	wire[31:0] rightShift = aluShifter[31:0];
 	wire[31:0] leftShift = flipBits32(rightShift);
 
@@ -204,14 +206,14 @@ module PipeOperation (
 
 	reg[31:0] csrWriteData;
 	always @(*) begin
-		if (isCSR) begin			
-			if (isCSRRW) csrWriteData <= csrRS1Data;
-			else if (isCSRRS) csrWriteData <= csrReadData | csrRS1Data;
-			else if (isCSRRC) csrWriteData <= csrReadData & ~csrRS1Data;
-			else csrWriteData <= 32'b0;
+		if (isCSR) begin
+			if (isCSRRW) csrWriteData = csrRS1Data;
+			else if (isCSRRS) csrWriteData = csrReadData | csrRS1Data;
+			else if (isCSRRC) csrWriteData = csrReadData & ~csrRS1Data;
+			else csrWriteData = 32'b0;
 		end else begin
-			csrWriteData <= 32'b0;
-		end 
+			csrWriteData = 32'b0;
+		end
 	end
 
 	wire csrRead = isCSRRC || isCSRRS || (isCSR && |rdIndex);
@@ -233,19 +235,18 @@ module PipeOperation (
 
 	// Memory interface
 	wire[31:0] targetMemoryAddress = aluAPlusB;
-	wire loadSigned    = (funct3 == 3'b000) || (funct3 == 3'b001);
 	wire loadStoreByte = funct3[1:0] == 2'b00;
 	wire loadStoreHalf = funct3[1:0] == 2'b01;
 	wire loadStoreWord = funct3 == 3'b010;
 	reg[3:0] baseByteMask;
 	always @(*) begin
 		if ((isLoad || isStore)) begin
-			if (loadStoreWord) baseByteMask <= 4'b1111;
-			else if (loadStoreHalf) baseByteMask <= 4'b0011;
-			else if (loadStoreByte) baseByteMask <= 4'b0001;
-			else baseByteMask <= 4'b0000;
+			if (loadStoreWord) baseByteMask = 4'b1111;
+			else if (loadStoreHalf) baseByteMask = 4'b0011;
+			else if (loadStoreByte) baseByteMask = 4'b0001;
+			else baseByteMask = 4'b0000;
 		end else begin
-			baseByteMask <= 4'b0000;
+			baseByteMask = 4'b0000;
 		end
 	end
 

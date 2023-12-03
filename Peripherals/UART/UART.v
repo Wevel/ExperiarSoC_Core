@@ -1,12 +1,14 @@
 `default_nettype none
 
-module SPI #(
-		parameter ID = 8'h01,
-		parameter DEVICE_COUNT = 1
+module UART #(
+		parameter ID = 8'h00,
+		parameter DEVICE_COUNT = 4,
+		parameter RX_BUFFER_SIZE = 32,
+		parameter TX_BUFFER_SIZE = 32
 	)(
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
 		input wire clk,
@@ -22,11 +24,11 @@ module SPI #(
 		input wire[31:0] peripheralBus_dataWrite,
 		output wire requestOutput,
 
-		output wire[DEVICE_COUNT-1:0] spi_en,
-		output wire[DEVICE_COUNT-1:0] spi_clk,
-		output wire[DEVICE_COUNT-1:0] spi_mosi,
-		input  wire[DEVICE_COUNT-1:0] spi_miso,
-		output wire[DEVICE_COUNT-1:0] spi_cs
+		// UART
+		output wire[DEVICE_COUNT-1:0] uart_en,
+		input wire[DEVICE_COUNT-1:0] uart_rx,
+		output wire[DEVICE_COUNT-1:0] uart_tx,
+		output wire[DEVICE_COUNT-1:0] uart_irq
 	);
 
 	// Peripheral select
@@ -49,7 +51,7 @@ module SPI #(
 	genvar i;
 	generate
 		for (i = 0; i < DEVICE_COUNT; i = i + 1) begin
-			SPIDevice #(.ID(i+1), .CLOCK_WIDTH(8)) device(
+			UARTDevice #(.ID(i+1), .RX_BUFFER_SIZE(RX_BUFFER_SIZE), .TX_BUFFER_SIZE(TX_BUFFER_SIZE)) device(
 				.clk(clk),
 				.rst(rst),
 				.peripheralEnable(peripheralEnable),
@@ -61,11 +63,10 @@ module SPI #(
 				.peripheralBus_dataWrite(peripheralBus_dataWrite),
 				.peripheralBus_dataRead(deviceOutputData[(i * 32) + 31:i * 32]),
 				.requestOutput(deviceOutputRequest[i]),
-				.spi_en(spi_en[i]),
-				.spi_clk(spi_clk[i]),
-				.spi_mosi(spi_mosi[i]),
-				.spi_miso(spi_miso[i]),
-				.spi_cs(spi_cs[i]));
+				.uart_en(uart_en[i]),
+				.uart_rx(uart_rx[i]),
+				.uart_tx(uart_tx[i]),
+				.uart_irq(uart_irq[i]));
 		end
 	endgenerate
 

@@ -1,6 +1,6 @@
 `default_nettype none
 
-module SRAMWrapper_FPGA #(
+module SRAM_Wrapper_FPGA_RW #(
 		parameter BYTE_COUNT = 4,
 		parameter ADDRESS_SIZE = 9
 	)(
@@ -13,15 +13,10 @@ module SRAMWrapper_FPGA #(
 		input wire[BYTE_COUNT-1:0] primaryWriteMask,
 		input wire[ADDRESS_SIZE-1:0] primaryAddress,
 		input wire[WORD_SIZE-1:0] primaryDataWrite,
-		reg wire[WORD_SIZE-1:0] primaryDataRead,
-
-		// Secondary R port
-		input wire secondarySelect,
-		input wire[ADDRESS_SIZE-1:0] secondaryAddress,
-		reg wire[WORD_SIZE-1:0] secondaryDataRead
+		output reg[WORD_SIZE-1:0] primaryDataRead
 	);
 
-	localparam WORD_SIZE = 4 * BYTE_COUNT;
+	localparam WORD_SIZE = 8 * BYTE_COUNT;
 
 	// For small amounts of memory this will work fine
 	reg[WORD_SIZE-1:0] memory [0:(1<<ADDRESS_SIZE)-1];
@@ -34,9 +29,6 @@ module SRAMWrapper_FPGA #(
 	wire[ADDRESS_SIZE-1:0] primaryAddress_reg;
 	wire[WORD_SIZE-1:0] primaryDataWrite_reg;
 
-	// Secondary R port
-	wire secondarySelect_reg;
-	wire[ADDRESS_SIZE-1:0] secondaryAddress_reg;
 
 	always @(posedge clk0) begin
 		// Primary RW port
@@ -45,10 +37,6 @@ module SRAMWrapper_FPGA #(
 		primaryWriteMask_reg <= primaryWriteMask;
 		primaryAddress_reg <= primaryAddress;
 		primaryDataWrite_reg <= primaryDataWrite;
-
-		// Secondary R port
-		secondarySelect_reg <= secondarySelect;
-		secondaryAddress_reg <= secondaryAddress;
 	end
 
 	// Write to memory
@@ -66,7 +54,6 @@ module SRAMWrapper_FPGA #(
 	// Read from memory
 	always @ (negedge clk) begin
 		if (primarySelect_reg && !primaryWriteEnable_reg) primaryDataRead <= mem[primaryAddress_reg];
-		if (secondarySelect_reg) secondaryDataRead <= mem[secondaryAddress_reg];
 	end
 
 endmodule

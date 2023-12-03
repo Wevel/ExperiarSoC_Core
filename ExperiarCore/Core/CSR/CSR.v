@@ -66,8 +66,6 @@ module CSR (
 	wire[31:0] timeTimerReadDataLower;
 	wire timeTimerRequestOutputLower;
 	CSR_ReadRegister #(.ADDRESS(12'hC01)) timeTimerLower(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(timeTimerReadDataLower),
@@ -77,8 +75,6 @@ module CSR (
 	wire[31:0] timeTimerReadDataUpper;
 	wire timeTimerRequestOutputUpper;
 	CSR_ReadRegister #(.ADDRESS(12'hC81)) timeTimerUpper(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(timeTimerReadDataUpper),
@@ -88,6 +84,7 @@ module CSR (
 	// Instret
 	wire[31:0] instretTimerReadData;
 	wire instretTimerRequestOutput;
+	wire[63:0] _unused_instretTimer;
 	CSR_TimerRegister #(.ADDRESS_LOWER(12'hC02), .ADDRESS_UPPER(12'hC82)) instretTimer (
 		.clk(clk),
 		.rst(rst),
@@ -95,14 +92,13 @@ module CSR (
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(instretTimerReadData),
 		.csrRequestOutput(instretTimerRequestOutput),
-		.count(instructionCompleted));
+		.count(instructionCompleted),
+		.value(_unused_instretTimer));
 
 	// Vendor ID
 	wire[31:0] vendorIDReadData;
 	wire vendorIDRequestOutput;
 	CSR_ReadRegister #(.ADDRESS(12'hF11)) vendorID(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(vendorIDReadData),
@@ -113,8 +109,6 @@ module CSR (
 	wire[31:0] archIDReadData;
 	wire archIDRequestOutput;
 	CSR_ReadRegister #(.ADDRESS(12'hF12)) archID(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(archIDReadData),
@@ -125,8 +119,6 @@ module CSR (
 	wire[31:0] implIDReadData;
 	wire implIDRequestOutput;
 	CSR_ReadRegister #(.ADDRESS(12'hF13)) implID(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(implIDReadData),
@@ -137,8 +129,6 @@ module CSR (
 	wire[31:0] coreIDReadData;
 	wire coreIDRequestOutput;
 	CSR_ReadRegister #(.ADDRESS(12'hF14)) coreID(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(coreIDReadData),
@@ -165,8 +155,6 @@ module CSR (
 	wire[31:0] misaReadData;
 	wire misaRequestOutput;
 	CSR_ReadRegister #(.ADDRESS(12'h301)) misa(
-		.clk(clk),
-		.rst(rst),
 		.csrReadEnable(csrReadEnable),
 		.csrReadAddress(csrReadAddress),
 		.csrReadData(misaReadData),

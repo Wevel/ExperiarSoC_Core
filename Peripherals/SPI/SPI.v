@@ -1,13 +1,12 @@
 `default_nettype none
 
-module PWM #(
-		parameter ID = 8'h02,
-		parameter DEVICE_COUNT = 4,
-		parameter OUTPUTS_PER_DEVICE = 4
+module SPI #(
+		parameter ID = 8'h01,
+		parameter DEVICE_COUNT = 1
 	)(
 `ifdef USE_POWER_PINS
-		inout vccd1,	// User area 1 1.8V supply
-		inout vssd1,	// User area 1 digital ground
+		inout VPWR,
+		inout VGND,
 `endif
 
 		input wire clk,
@@ -23,9 +22,11 @@ module PWM #(
 		input wire[31:0] peripheralBus_dataWrite,
 		output wire requestOutput,
 
-		output wire[(DEVICE_COUNT*OUTPUTS_PER_DEVICE)-1:0] pwm_en,
-		output wire[(DEVICE_COUNT*OUTPUTS_PER_DEVICE)-1:0] pwm_out,
-		output wire[DEVICE_COUNT-1:0] pwm_irq
+		output wire[DEVICE_COUNT-1:0] spi_en,
+		output wire[DEVICE_COUNT-1:0] spi_clk,
+		output wire[DEVICE_COUNT-1:0] spi_mosi,
+		input  wire[DEVICE_COUNT-1:0] spi_miso,
+		output wire[DEVICE_COUNT-1:0] spi_cs
 	);
 
 	// Peripheral select
@@ -36,6 +37,7 @@ module PWM #(
 		.localAddress(localAddress),
 		.peripheralEnable(peripheralEnable));
 
+	wire[DEVICE_COUNT-1:0] deviceBusy;
 	wire[DEVICE_COUNT-1:0] deviceOutputRequest;
 	wire[(32 * DEVICE_COUNT) - 1:0] deviceOutputData;
 	Mux #(.WIDTH(32), .INPUTS(DEVICE_COUNT), .DEFAULT(~32'b0)) mux(
@@ -44,29 +46,29 @@ module PWM #(
 		.out(peripheralBus_dataRead),
 		.outputEnable(requestOutput));
 
-	wire[DEVICE_COUNT-1:0] _unused_deviceBusy;
-
 	genvar i;
 	generate
 		for (i = 0; i < DEVICE_COUNT; i = i + 1) begin
-			PWMDevice #(.ID(i+1), .OUTPUTS(OUTPUTS_PER_DEVICE), .WIDTH(16), .CLOCK_WIDTH(32)) device(
+			SPIDevice #(.ID(i+1), .CLOCK_WIDTH(8)) device(
 				.clk(clk),
 				.rst(rst),
 				.peripheralEnable(peripheralEnable),
 				.peripheralBus_we(peripheralBus_we),
 				.peripheralBus_oe(peripheralBus_oe),
-				.peripheralBus_busy(_unused_deviceBusy[i]),
+				.peripheralBus_busy(deviceBusy[i]),
 				.peripheralBus_address(localAddress),
 				.peripheralBus_byteSelect(peripheralBus_byteSelect),
 				.peripheralBus_dataWrite(peripheralBus_dataWrite),
 				.peripheralBus_dataRead(deviceOutputData[(i * 32) + 31:i * 32]),
 				.requestOutput(deviceOutputRequest[i]),
-				.pwm_en(pwm_en[(i * OUTPUTS_PER_DEVICE) + OUTPUTS_PER_DEVICE - 1:i * OUTPUTS_PER_DEVICE]),
-				.pwm_out(pwm_out[(i * OUTPUTS_PER_DEVICE) + OUTPUTS_PER_DEVICE - 1:i * OUTPUTS_PER_DEVICE]),
-				.pwm_irq(pwm_irq[i]));
+				.spi_en(spi_en[i]),
+				.spi_clk(spi_clk[i]),
+				.spi_mosi(spi_mosi[i]),
+				.spi_miso(spi_miso[i]),
+				.spi_cs(spi_cs[i]));
 		end
 	endgenerate
 
-	assign peripheralBus_busy = 1'b0;
+	assign peripheralBus_busy = |deviceBusy;
 
 endmodule
